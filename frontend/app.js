@@ -1040,7 +1040,7 @@ function renderManageData(){
           ?`<span style="background:${YR_COLORS[s.year_level]};color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:700;">${YR_LABELS[s.year_level]}</span>`
           :`<span style="background:#90a4ae;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;">All Yrs</span>`;
         const prog=`<span style="background:${PROG_COLORS[s.program]||'#546e7a'};color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:700;">${s.program==='Both'?'GE/Both':s.program}</span>`;
-        const majorOpts=STATE.majors.map(m=>`<option value="${m.id}"${m.id===s.major_id?' selected':''}>${escHtml(m.name)}</option>`).join('');
+        const majorOpts=STATE.majors.filter(m=>(m.type||'Major')==='Major').map(m=>`<option value="${m.id}"${m.id===s.major_id?' selected':''}>${escHtml(m.name)}</option>`).join('');
         return `
           <div class="list-item">
             <div><div class="lname">${escHtml(s.code)} – ${escHtml(s.descr)} ${s.is_lab?'<span style=\"background:#e53935;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LAB</span>':'<span style=\"background:#1565c0;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;\">LEC</span>'}${prog}${yr}</div><div class="lsub">${escHtml(s.major_name||'—')} | ${s.units} units${s.is_lab?' — WL: '+(s.units*2.25).toFixed(2)+' units':''}</div></div>
@@ -1177,8 +1177,9 @@ function renderManageData(){
       </div>
     </div>` || '<div class="empty-mini">Add a Major or Minor first.</div>';
 
-  document.getElementById('ns-major').innerHTML=STATE.majors.length
-    ?STATE.majors.map(m=>`<option value="${m.id}">${escHtml(m.name)}</option>`).join('')
+  const nsMajorList=STATE.majors.filter(m=>(m.type||'Major')==='Major');
+  document.getElementById('ns-major').innerHTML=nsMajorList.length
+    ?nsMajorList.map(m=>`<option value="${m.id}">${escHtml(m.name)}</option>`).join('')
     :'<option value="">-- add a major first --</option>';
   const niSubjEl=document.getElementById('ni-subjects');
   if(niSubjEl){
