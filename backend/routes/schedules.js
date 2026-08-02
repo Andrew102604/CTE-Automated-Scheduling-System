@@ -59,8 +59,11 @@ router.post('/schedules', async (req, res) => {
     if (!subject) return res.status(404).json({ error: 'Subject not found.' });
     if (!room) return res.status(404).json({ error: 'Room not found.' });
 
-    const instMajR = await db.execute({ sql: `SELECT major_id FROM instructor_majors WHERE instructor_id = ?`, args: [instructor_id] });
-    const instructorMajorIds = instMajR.rows.map(r => r.major_id);
+    const [instMajR, instCanHandleR] = await Promise.all([
+      db.execute({ sql: `SELECT major_id FROM instructor_majors WHERE instructor_id = ?`, args: [instructor_id] }),
+      db.execute({ sql: `SELECT major_id FROM instructor_can_handle WHERE instructor_id = ?`, args: [instructor_id] })
+    ]);
+    const instructorMajorIds = [...instMajR.rows.map(r => r.major_id), ...instCanHandleR.rows.map(r => r.major_id)];
     if (!instructorMajorIds.includes(subject.major_id)) {
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject's major.` });
     }
@@ -125,8 +128,11 @@ router.put('/schedules/:id', async (req, res) => {
     if (!subject)    return res.status(404).json({ error: 'Subject not found.' });
     if (!room)       return res.status(404).json({ error: 'Room not found.' });
 
-    const instMajR = await db.execute({ sql: `SELECT major_id FROM instructor_majors WHERE instructor_id = ?`, args: [instructor_id] });
-    const instructorMajorIds = instMajR.rows.map(r => r.major_id);
+    const [instMajR, instCanHandleR] = await Promise.all([
+      db.execute({ sql: `SELECT major_id FROM instructor_majors WHERE instructor_id = ?`, args: [instructor_id] }),
+      db.execute({ sql: `SELECT major_id FROM instructor_can_handle WHERE instructor_id = ?`, args: [instructor_id] })
+    ]);
+    const instructorMajorIds = [...instMajR.rows.map(r => r.major_id), ...instCanHandleR.rows.map(r => r.major_id)];
     if (!instructorMajorIds.includes(subject.major_id))
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject.` });
 
