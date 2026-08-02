@@ -440,9 +440,11 @@ function filterInstructorsBySubject(){
     return;
   }
 
-  // Filter: instructor must have a major matching subject's major_id
+  // Filter: instructor must have a major/minor matching subject's major_id,
+  // OR the subject's major is listed in their allied "can handle" fields
   const qualified = STATE.instructors.filter(i=>
-    i.majors.some(m=>m.id===subj.major_id)
+    i.majors.some(m=>m.id===subj.major_id) ||
+    (i.can_handle && i.can_handle.some(m=>m.id===subj.major_id))
   );
 
   if(hintEl){
@@ -1407,7 +1409,7 @@ function emFilterSubjects(preselectedSubjectId){
   const inst = getInst(instId);
   const sel = document.getElementById('em-subject');
   if(!inst){ sel.innerHTML = '<option>-- select instructor first --</option>'; return; }
-  const mids = inst.majors.map(m => m.id);
+  const mids = [...inst.majors.map(m => m.id), ...((inst.can_handle||[]).map(m => m.id))];
   const matching = STATE.subjects.filter(s => mids.includes(s.major_id));
   sel.innerHTML = matching.length
     ? matching.map(s =>
