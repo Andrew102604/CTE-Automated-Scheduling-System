@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTE Automated Scheduling System</title>
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --navy:#0d2b55; --navy2:#163d7a; --gold:#c9a227; --gold2:#f0c040;
+  --white:#ffffff; --offwhite:#f5f7fa; --gray1:#e8ecf2; --gray2:#c5cdd9;
+  --gray3:#7a8799; --text:#1a2535; --red:#c0392b; --green:#28a745;
+  --shadow:0 2px 12px rgba(13,43,85,.13);
+  --sidebar-w:310px;
+  --topbar-h:62px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:var(--offwhite);color:var(--text);min-height:100vh;}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+#topbar{
+  background:linear-gradient(135deg,var(--navy) 70%,var(--navy2));
+  color:#fff;display:flex;align-items:center;gap:12px;
+  padding:0 20px;height:var(--topbar-h);
+  box-shadow:0 2px 8px rgba(0,0,0,.22);position:sticky;top:0;z-index:100;
+}
+#topbar .logo{font-size:20px;font-weight:800;letter-spacing:1px;color:var(--gold2);white-space:nowrap;}
+#topbar .subtitle{font-size:11px;color:#a8c4e8;white-space:nowrap;}
+#topbar .spacer{flex:1;}
+#conn-status{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+#conn-status .dot{width:7px;height:7px;border-radius:50%;background:#3ddc84;flex-shrink:0;}
+#conn-status.offline .dot{background:var(--red);}
+#conn-status.offline{background:rgba(192,57,43,.2);}
+#conn-status.online{background:rgba(61,220,132,.15);}
+#hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:5px;}
+#hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:.3s;}
+#topbar-user{display:flex;align-items:center;gap:8px;font-size:12px;color:#a8c4e8;}
+#topbar-user button{background:none;border:1.5px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;}
+#topbar-user button:hover{background:rgba(255,255,255,.1);}
+
+/* ============================================================
+   OVERLAY (mobile sidebar backdrop)
+   ============================================================ */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:149;}
+#overlay.show{display:block;}
+
+/* ============================================================
+   APP LAYOUT
+   ============================================================ */
+#app{display:flex;height:calc(100vh - var(--topbar-h));overflow:hidden;}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+#sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--white);border-right:2px solid var(--gray1);
+  display:flex;flex-direction:column;overflow-y:auto;
+  transition:transform .3s;
+}
+#sidebar h2{background:var(--navy);color:#fff;padding:13px 18px;font-size:13px;font-weight:700;}
+.form-section{padding:13px 18px;border-bottom:1px solid var(--gray1);}
+.form-section label{display:block;font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.form-section select,.form-section input[type=text]{width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;color:var(--text);background:var(--offwhite);}
+.form-section .hint{font-size:10px;color:var(--gray3);margin-top:3px;}
+#btn-add{margin:13px 18px 5px;width:calc(100% - 36px);background:var(--navy);color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;}
+#btn-add:hover:not(:disabled){background:var(--navy2);}
+#btn-add:disabled{background:var(--gray2);cursor:not-allowed;}
+#btn-reset{margin:0 18px 13px;width:calc(100% - 36px);background:transparent;color:var(--red);border:1.5px solid var(--red);border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;}
+#msg{margin:0 18px 8px;padding:9px 12px;border-radius:6px;font-size:12px;font-weight:600;display:none;word-break:break-word;}
+#msg.ok{background:#d4edda;color:#155724;border-left:4px solid var(--green);}
+#msg.err{background:#f8d7da;color:#721c24;border-left:4px solid var(--red);}
+.setup-needed{margin:13px 18px;padding:13px;border-radius:8px;background:#fff3cd;border-left:4px solid var(--gold);font-size:12px;color:#7a5d00;line-height:1.5;}
+.setup-needed b{display:block;margin-bottom:4px;}
+
+/* ============================================================
+   MAIN + TABS
+   ============================================================ */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+#tabs{display:flex;background:var(--white);border-bottom:2px solid var(--gray1);padding:0 16px;overflow-x:auto;scrollbar-width:none;}
+#tabs::-webkit-scrollbar{display:none;}
+.tab-btn{padding:13px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--gray3);border-bottom:3px solid transparent;transition:all .2s;margin-bottom:-2px;white-space:nowrap;flex-shrink:0;}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--gold);}
+.tab-btn:hover:not(.active){color:var(--navy2);}
+#panels{flex:1;overflow:hidden;padding:0;display:flex;flex-direction:column;}
+.panel{display:none;flex:1;overflow-y:auto;padding:18px 20px;}
+.panel#panel-3{padding:0;overflow:hidden;}
+.panel.active{display:flex !important;flex-direction:column;}
+
+/* ============================================================
+   TIMETABLE
+   ============================================================ */
+.grid-wrap{overflow-x:auto;margin-bottom:28px;border-radius:6px;box-shadow:var(--shadow);}
+.grid-header{background:var(--navy);color:#fff;padding:10px 16px;font-weight:700;font-size:13px;}
+table.sched-grid{border-collapse:collapse;min-width:700px;width:100%;}
+table.sched-grid th,table.sched-grid td{border:1px solid var(--gray2);padding:5px 6px;text-align:center;font-size:11px;vertical-align:middle;}
+table.sched-grid td.time-col{background:#f0f3f8;font-weight:600;width:100px;font-size:10px;white-space:nowrap;}
+table.sched-grid th.corner{background:#0d2b55;color:#fff;}
+table.sched-grid th.room-hdr{background:#1e3d59;color:#fff;font-size:11px;font-weight:700;}
+table.sched-grid th.sec-hdr{background:var(--gray1);color:var(--navy);font-size:10px;font-weight:700;min-width:80px;}
+table.sched-grid th.room-sep-top{background:#0d2b55;border:none;padding:0;width:3px;}
+table.sched-grid td.room-sep{background:var(--navy);border:none;width:3px;padding:0;}
+table.sched-grid td.cell-empty{color:var(--gray2);font-size:10px;}
+table.sched-grid td.cell-used{font-size:10px;line-height:1.4;}
+table.sched-grid tr.lunch-row td{background:#fff3cd;color:#856404;font-weight:700;font-size:11px;padding:5px;border:1px solid #ffc107;}
+.ic1{background:#fff9c4;}.ic2{background:#bbdefb;}.ic3{background:#c8e6c9;}
+.ic4{background:#f8bbd0;}.ic5{background:#e1bee7;}.ic6{background:#ffe0b2;}
+.ic7{background:#b2dfdb;}.ic8{background:#dcedc8;}.ic9{background:#fce4ec;}
+
+/* ============================================================
+   SECTION / WORKLOAD SELECTORS + PRINT BTN
+   ============================================================ */
+.section-selector{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.section-selector select,.workload-select select{padding:8px 12px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;background:var(--white);}
+.workload-select{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+.btn-print{background:var(--gold);color:var(--navy);border:none;border-radius:6px;padding:8px 18px;font-weight:700;font-size:13px;cursor:pointer;}
+
+/* ============================================================
+   DOCUMENTS (Class Program / Workload)
+   ============================================================ */
+.doc-wrapper{background:var(--white);border:1px solid var(--gray2);border-radius:8px;padding:28px;max-width:860px;box-shadow:var(--shadow);}
+.doc-header{text-align:center;font-family:'Times New Roman',serif;margin-bottom:14px;}
+.doc-header .school{font-size:16px;font-weight:700;}
+.doc-header .sub{font-size:12px;}
+.doc-header .doctitle{font-size:14px;font-weight:700;margin-top:8px;text-transform:uppercase;}
+.doc-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;}
+.doc-table th,.doc-table td{border:1px solid #444;padding:5px 7px;text-align:center;}
+.doc-table th{background:#e8ecf2;font-weight:700;}
+.sign-line{border:none;border-bottom:1.5px solid #555;background:transparent;outline:none;font-size:12px;font-weight:700;padding:1px 0;text-align:center;}
+.sign-role{font-size:11px;color:#555;margin-top:2px;}
+.workload-card{background:var(--white);border:1px solid var(--gray2);border-radius:8px;padding:26px 28px;max-width:860px;box-shadow:var(--shadow);margin-bottom:20px;}
+.wl-formtable{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;}
+.wl-formtable td{border:none;padding:3px 0;vertical-align:top;}
+.wl-checkgrid{display:grid;grid-template-columns:auto 1fr auto 1fr;column-gap:8px;row-gap:6px;align-items:center;margin:10px auto 14px;font-size:12px;max-width:420px;}
+.wl-checkbox{width:15px;height:15px;border:1.3px solid #333;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;}
+.wl-cb{width:15px;height:15px;border:1.3px solid #333;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;cursor:pointer;user-select:none;transition:background .15s;}
+.wl-cb:hover{background:#eef2ff;}
+.wl-check{font-size:11px;font-weight:900;line-height:1;color:#0d2b55;}
+.wl-daytime{font-size:11px;line-height:1.5;}
+.wl-daytime .wl-dayname{font-style:italic;font-weight:700;display:block;}
+.wl-sigs{margin-top:8px;font-size:12px;font-family:Arial,sans-serif;}
+.wl-sigs-2col{display:block;}
+.wl-sigs-3col{display:block;}
+.wl-sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px;margin-bottom:24px;}
+.wl-sig-row.wl-sig-row-2{grid-template-columns:1fr 1fr;}
+.wl-sig-cell{text-align:center;}
+.wl-sig-label{font-size:11px;color:#333;margin-bottom:12px;}
+.wl-sig-block-label{font-size:11px;color:#333;margin-bottom:12px;margin-top:8px;}
+.wl-sig-cell .sign-line{width:100%;max-width:190px;display:block;margin:0 auto;}
+.wl-sig-approved{margin-top:24px;text-align:center;}
+.wl-sig-approved .sign-line{width:220px;display:block;margin:0 auto;}
+.wl-summary2col{width:100%;border-collapse:collapse;font-size:12px;}
+.wl-summary2col td{border:1px solid #444;padding:5px 7px;}
+.wl-summary2col td.lbl{font-weight:600;width:75%;}
+.wl-summary2col td.val{font-weight:700;text-align:center;}
+.wl-summary2col tr.total td{font-weight:700;}
+
+/* ============================================================
+   MANAGE DATA
+   ============================================================ */
+.mgr-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.mgr-card{background:var(--white);border-radius:8px;border:1px solid var(--gray1);padding:16px;box-shadow:var(--shadow);}
+.mgr-card h3{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;}
+.list-item{display:flex;align-items:flex-start;justify-content:space-between;padding:7px 9px;border-radius:5px;margin-bottom:5px;font-size:12px;background:var(--offwhite);}
+.list-item .lname{font-weight:600;}
+.list-item .lsub{color:var(--gray3);font-size:11px;margin-top:2px;}
+.list-item .major-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
+.major-tag{background:var(--navy);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;}
+.list-item button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px 5px;flex-shrink:0;}
+.add-row{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;}
+.add-row input,.add-row select{flex:1;min-width:70px;padding:6px 8px;border:1.5px solid var(--gray2);border-radius:5px;font-size:12px;}
+.add-row button{background:var(--navy);color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.major-checkbox-group{border:1.5px solid var(--gray2);border-radius:6px;padding:8px 10px;background:var(--offwhite);max-height:130px;overflow-y:auto;margin-top:4px;}
+.major-checkbox-group label{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;cursor:pointer;}
+.major-checkbox-group input[type=checkbox]{width:14px;height:14px;accent-color:var(--navy);}
+.fld{width:100%;padding:7px 9px;border:1.5px solid var(--gray2);border-radius:5px;font-size:12px;margin-bottom:6px;}
+.empty-mini{font-size:11px;color:var(--gray3);padding:8px 0;text-align:center;}
+
+/* ── MANAGE DATA — sidebar nav layout ── */
+.mgr-layout{display:flex;height:100%;gap:0;}
+.mgr-nav{width:200px;min-width:160px;background:var(--white);border-right:2px solid var(--gray1);padding:10px 0;flex-shrink:0;}
+.mgr-nav-item{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:13px;font-weight:500;color:var(--gray3);cursor:pointer;border-left:3px solid transparent;transition:all .15s;user-select:none;}
+.mgr-nav-item:hover{background:var(--offwhite);color:var(--navy);}
+.mgr-nav-item.active{color:var(--navy);font-weight:700;border-left-color:var(--gold);background:var(--offwhite);}
+.mgr-nav-num{font-size:10px;font-weight:800;color:var(--gray3);min-width:14px;}
+.mgr-nav-item.active .mgr-nav-num{color:var(--navy2);}
+.mgr-content{flex:1;overflow-y:auto;padding:24px 28px;min-width:0;}
+.mgr-section{display:none;}
+.mgr-section.active{display:block;}
+.mgr-section-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.mgr-section-sub{font-size:12px;color:var(--gray3);margin-bottom:20px;}
+.mgr-list-wrap{border:1.5px solid var(--gray1);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.mgr-list-empty{text-align:center;color:var(--gray3);font-size:12px;padding:20px;}
+.mgr-add-box{background:var(--offwhite);border:1.5px solid var(--gray1);border-radius:8px;padding:16px;}
+.mgr-add-title{font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.mgr-add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.mgr-add-row:last-child{margin-bottom:0;}
+.mgr-input{padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;color:var(--text);background:var(--white);flex:1;min-width:0;}
+.mgr-input:focus{outline:none;border-color:var(--navy2);}
+.mgr-btn{background:var(--navy);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.mgr-btn:hover{background:var(--navy2);}
+.mgr-lunch-lbl{display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;cursor:pointer;flex-shrink:0;}
+.mgr-lunch-lbl input{width:14px;height:14px;accent-color:var(--navy);cursor:pointer;}
+.mgr-inst-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.mgr-majors-section{margin-bottom:10px;}
+.mgr-add-inst-btn{width:100%;background:var(--navy);color:#fff;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;}
+.mgr-add-inst-btn:hover{background:var(--navy2);}
+.mgr-hint{font-size:11px;color:var(--gray3);margin-bottom:12px;line-height:1.6;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;}
+@media(max-width:640px){
+  .mgr-layout{flex-direction:column;}
+  .mgr-nav{width:100%;border-right:none;border-bottom:2px solid var(--gray1);padding:6px 0;display:flex;overflow-x:auto;scrollbar-width:none;}
+  .mgr-nav::-webkit-scrollbar{display:none;}
+  .mgr-nav-item{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:8px 14px;font-size:12px;}
+  .mgr-nav-item.active{border-left-color:transparent;border-bottom-color:var(--gold);}
+  .mgr-content{padding:16px;}
+  .mgr-inst-grid{grid-template-columns:1fr;}
+}
+.inline-err{font-size:11px;color:var(--red);margin-top:5px;display:none;}
+.list-edit-btn{background:none;border:1px solid var(--gray2);border-radius:4px;color:var(--navy);cursor:pointer;font-size:11px;padding:2px 7px;margin-left:4px;flex-shrink:0;}
+.list-edit-btn:hover{background:var(--offwhite);}
+.edit-inline-form{background:var(--offwhite);border:1.5px solid var(--navy2);border-radius:6px;padding:10px;margin-top:4px;display:none;}
+.edit-inline-form.open{display:block;}
+.edit-inline-form input,.edit-inline-form select{width:100%;padding:6px 9px;border:1.5px solid var(--gray2);border-radius:5px;font-size:12px;margin-bottom:6px;}
+.edit-inline-form .edit-row{display:flex;gap:6px;}
+.edit-inline-form .edit-row button{flex:1;padding:6px;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;}
+.edit-save-btn{background:var(--navy);color:#fff;}
+.edit-cancel-btn{background:transparent;color:var(--gray3);border:1px solid var(--gray2) !important;}
+.section-divider{border-top:1px solid var(--gray1);margin-top:12px;padding-top:12px;}
+.section-label{font-size:11px;font-weight:700;color:var(--gray3);margin-bottom:6px;}
+
+/* ============================================================
+   CHANGE PASSWORD CARD (inside Manage Data)
+   ============================================================ */
+.pwd-card{background:var(--white);border-radius:8px;border:1px solid var(--gray1);padding:16px;box-shadow:var(--shadow);grid-column:span 2;}
+.pwd-card h3{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;}
+.pwd-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.pwd-row .fld{margin-bottom:0;flex:1;min-width:140px;}
+.pwd-row button{background:var(--navy);color:#fff;border:none;border-radius:5px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+
+/* ============================================================
+   NO DATA PLACEHOLDER
+   ============================================================ */
+.no-data{text-align:center;color:var(--gray3);padding:36px 20px;font-size:14px;line-height:1.7;}
+.no-data a.goto-manage{color:var(--navy2);font-weight:700;cursor:pointer;text-decoration:underline;}
+
+/* ============================================================
+   AUTH SCREENS (Login + Setup)
+   ============================================================ */
+#auth-screen{
+  display:none;position:fixed;inset:0;
+  background:linear-gradient(135deg,var(--navy) 0%,#1a4a8a 100%);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+}
+#auth-screen.show{display:flex;}
+.auth-box{background:var(--white);border-radius:12px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.3);}
+.auth-logo{text-align:center;margin-bottom:24px;}
+.auth-logo .al{font-size:26px;font-weight:800;color:var(--navy);letter-spacing:1px;}
+.auth-logo .as{font-size:12px;color:var(--gray3);margin-top:3px;}
+.auth-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.auth-sub{font-size:12px;color:var(--gray3);margin-bottom:20px;line-height:1.5;}
+.auth-field{margin-bottom:14px;}
+.auth-field label{display:block;font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.auth-field input{width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:7px;font-size:14px;color:var(--text);transition:border-color .2s;}
+.auth-field input:focus{outline:none;border-color:var(--navy2);}
+.auth-btn{width:100%;background:var(--navy);color:#fff;border:none;border-radius:7px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;}
+.auth-btn:hover{background:var(--navy2);}
+.auth-err{font-size:12px;color:var(--red);margin-top:10px;text-align:center;display:none;font-weight:600;}
+.auth-success{font-size:12px;color:var(--green);margin-top:10px;text-align:center;display:none;font-weight:600;}
+.pwd-wrap{position:relative;display:flex;align-items:center;}
+.pwd-wrap input{flex:1;padding-right:40px;}
+.pwd-wrap .eye-btn{position:absolute;right:10px;background:none;border:none;cursor:pointer;color:var(--gray3);font-size:16px;line-height:1;padding:4px;user-select:none;}
+.pwd-wrap .eye-btn:hover{color:var(--navy);}
+.pwd-wrap.fld-wrap input{padding-right:40px;}
+
+/* ============================================================
+   TABLET — max-width: 900px
+   ============================================================ */
+@media (max-width:900px) {
+  :root{ --sidebar-w:260px; }
+  #topbar .subtitle{display:none;}
+  .mgr-grid{grid-template-columns:1fr;}
+  .pwd-card{grid-column:span 1;}
+  .doc-wrapper,.workload-card{padding:20px;}
+  #panels{padding:14px 16px;}
+}
+
+/* ============================================================
+   MOBILE — max-width: 640px
+   ============================================================ */
+@media (max-width:640px) {
+  :root{ --topbar-h:56px; }
+  #topbar{padding:0 14px;gap:10px;}
+  #topbar .logo{font-size:17px;}
+  #hamburger{display:flex;}
+  #conn-status{display:none;}
+
+  /* Sidebar slides in from left as a drawer */
+  #sidebar{
+    position:fixed;top:var(--topbar-h);left:0;bottom:0;
+    z-index:150;transform:translateX(-100%);
+    width:290px;min-width:0;
+    box-shadow:4px 0 20px rgba(0,0,0,.2);
+  }
+  #sidebar.open{transform:translateX(0);}
+
+  #app{height:calc(100vh - var(--topbar-h));overflow:hidden;}
+  #main{width:100%;}
+
+  #tabs{padding:0 10px;}
+  .tab-btn{padding:12px 12px;font-size:12px;}
+  #panels{padding:12px 12px;}
+
+  .mgr-grid{grid-template-columns:1fr;gap:12px;}
+  .pwd-card{grid-column:span 1;}
+
+  .auth-box{padding:28px 22px;}
+
+  table.sched-grid{font-size:10px;}
+  table.sched-grid th,table.sched-grid td{padding:3px 4px;}
+
+  .doc-wrapper,.workload-card{padding:14px;}
+  .doc-table{font-size:11px;}
+
+  .section-selector,.workload-select{flex-direction:column;align-items:stretch;}
+  .section-selector select,.workload-select select{width:100%;}
+  .btn-print{width:100%;text-align:center;}
+
+  .add-row{flex-direction:column;}
+  .add-row input,.add-row select{width:100%;}
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@page{size:A4 portrait;margin:12mm;}
+@page timetable-page{size:A4 landscape;margin:8mm;}
+body.printing-timetable{page:timetable-page;}
+body.printing-timetable #topbar,
+body.printing-timetable #sidebar,
+body.printing-timetable #tabs,
+body.printing-timetable .section-selector,
+body.printing-timetable .workload-select,
+body.printing-timetable .btn-print,
+body.printing-timetable .no-print,
+body.printing-timetable #panel-1,
+body.printing-timetable #panel-2,
+body.printing-timetable #panel-3,
+body.printing-timetable #auth-screen,
+body.printing-timetable #overlay{display:none!important;}
+@media print{
+  html,body{width:100%;height:auto;background:#fff!important;overflow:visible!important;}
+  #auth-screen,#overlay,#topbar,#sidebar,#tabs,.no-print{display:none!important;}
+  #app{height:auto!important;overflow:visible!important;display:block!important;}
+  #main{overflow:visible!important;}
+  #panels{padding:0!important;overflow:visible!important;}
+  .panel{display:none!important;}
+  .panel.active{display:block!important;}
+  .doc-wrapper,.workload-card{box-shadow:none!important;border:none!important;border-radius:0!important;max-width:100%!important;padding:0!important;margin:0!important;}
+  .workload-card{page-break-after:always;}
+  .workload-card:last-child{page-break-after:auto;}
+  body.printing-timetable #panel-0{display:block!important;}
+  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;page-break-inside:avoid;}
+  .grid-wrap:last-child{page-break-after:auto;}
+  .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;}
+  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:7.5px;page-break-inside:avoid;}
+  table.sched-grid th,table.sched-grid td{padding:2px;overflow:hidden;word-break:break-word;}
+  table.sched-grid td.time-col{width:auto;font-size:7px;}
+  tr,td,th{page-break-inside:avoid;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  .sign-line{border-bottom:1px solid #000!important;}
+  /* Hide dropdown arrows and style selects as plain text on print */
+  select{-webkit-appearance:none;-moz-appearance:none;appearance:none;border:none!important;background:transparent!important;padding:0!important;font-size:inherit!important;}
+  input[type=text],input[type=number]{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;}
+  .wl-semester-sel,.cp-semester{-webkit-appearance:none;appearance:none;}
+  /* Class Program print overrides */
+  .cp-doc{padding:0!important;max-width:100%!important;}
+  .cp-doc table{font-size:10px!important;}
+  .cp-doc thead tr{background:#d0d8e8!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     AUTH SCREENS
+     ============================================================ -->
+<div id="auth-screen" class="show">
+  <!-- LOGIN -->
+  <div class="auth-box" id="auth-login-box">
+    <div class="auth-logo">
+      <div class="al">CTE</div>
+      <div class="as">Automated Scheduling System</div>
+    </div>
+    <div class="auth-title">Admin Login</div>
+    <div class="auth-sub">Enter your admin credentials to access the scheduling system.</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button type="button" class="eye-btn" onclick="togglePwd('login-password',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <button class="auth-btn" onclick="doLogin()">Login</button>
+    <div class="auth-err" id="login-err"></div>
+  </div>
+
+  <!-- FIRST-TIME SETUP -->
+  <div class="auth-box" id="auth-setup-box" style="display:none;">
+    <div class="auth-logo">
+      <div class="al">CTE</div>
+      <div class="as">Automated Scheduling System</div>
+    </div>
+    <div class="auth-title">First-Time Setup</div>
+    <div class="auth-sub">Welcome! Create an admin account to get started. This only happens once.</div>
+    <div class="auth-field">
+      <label>Username</label>
+      <input type="text" id="setup-username" placeholder="e.g. admin" autocomplete="username" onkeydown="if(event.key==='Enter')doSetup()">
+    </div>
+    <div class="auth-field">
+      <label>Password <span style="color:var(--gray3);font-size:10px;">(min. 6 characters)</span></label>
+      <div class="pwd-wrap">
+        <input type="password" id="setup-password" placeholder="Create a strong password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetup()">
+        <button type="button" class="eye-btn" onclick="togglePwd('setup-password',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <div class="auth-field">
+      <label>Confirm Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="setup-confirm" placeholder="Re-enter password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetup()">
+        <button type="button" class="eye-btn" onclick="togglePwd('setup-confirm',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <button class="auth-btn" onclick="doSetup()">Create Admin Account</button>
+    <div class="auth-err" id="setup-err"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="overlay" onclick="closeSidebar()"></div>
+
+<div id="topbar">
+  <button id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div>
+    <div class="logo">CTE</div>
+    <div class="subtitle">Automated Scheduling System</div>
+  </div>
+  <div class="spacer"></div>
+  <div id="conn-status" class="online"><span class="dot"></span><span id="conn-status-text">Connected</span></div>
+  <div id="topbar-user">
+    <span id="topbar-username"></span>
+    <button onclick="doLogout()">Logout</button>
+  </div>
+</div>
+
+<div id="app">
+  <div id="sidebar">
+    <h2>ASSIGN SCHEDULE</h2>
+    <div id="setup-needed-box" class="setup-needed" style="display:none;"></div>
+    <div id="assign-form-fields">
+      <div class="form-section">
+        <label>Program / Year &amp; Section</label>
+        <input type="text" id="f-section" placeholder="e.g. BEED 1A" onkeydown="if(event.key==='Enter')addSchedule()" oninput="filterSubjectsBySection()">
+        <div class="hint" style="color:var(--navy2);">Section is kept after saving — change only for a new section.</div>
+        <div id="yr-hint" class="hint" style="color:var(--navy2);font-weight:600;display:none;"></div>
+      </div>
+      <div class="form-section">
+        <label>Number of Students</label>
+        <input type="number" id="f-num-students" placeholder="e.g. 35" min="0" max="999" onkeydown="if(event.key==='Enter')addSchedule()"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;color:var(--text);background:var(--offwhite);">
+      </div>
+      <div class="form-section">
+        <label>Course</label>
+        <select id="f-subject" onchange="filterInstructorsBySubject()"></select>
+        <div class="hint" id="subj-hint">Filtered by section program &amp; year level</div>
+      </div>
+      <div class="form-section">
+        <label>Faculty</label>
+        <select id="f-instructor"></select>
+        <div class="hint" id="inst-hint" style="display:none;"></div>
+      </div>
+      <div class="form-section">
+        <label>Day Cluster</label>
+        <select id="f-day"></select>
+      </div>
+      <div class="form-section">
+        <label>Time Slot</label>
+        <select id="f-timeslot"></select>
+      </div>
+      <div class="form-section">
+        <label>Room / Location</label>
+        <select id="f-room"></select>
+      </div>
+      <button id="btn-add" onclick="addSchedule()">Save &amp; Plot to Grid</button>
+      <div id="msg"></div>
+      <button id="btn-reset" onclick="resetSchedules()">Reset All Schedules</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="tabs">
+      <button class="tab-btn active" onclick="switchTab(0)">Timetable</button>
+      <button class="tab-btn" onclick="switchTab(1)">Class Program</button>
+      <button class="tab-btn" onclick="switchTab(2)">Faculty Workload</button>
+      <button class="tab-btn" onclick="switchTab(3)">Manage Data</button>
+    </div>
+    <div id="panels">
+      <!-- PANEL 0: TIMETABLE -->
+      <div class="panel active" id="panel-0">
+        <div class="section-selector no-print">
+          <button class="btn-print" onclick="printTimetableOnly()">🖨️ Print Timetable</button>
+        </div>
+        <div id="timetable-grid"></div>
+      </div>
+
+      <!-- PANEL 1: CLASS PROGRAM -->
+      <div class="panel" id="panel-1">
+        <div class="section-selector no-print">
+          <label style="font-weight:700;font-size:13px;">Section:</label>
+          <select id="cp-section-sel" onchange="renderClassProgram()"></select>
+          <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+        </div>
+        <div id="class-program-doc"></div>
+      </div>
+
+      <!-- PANEL 2: FACULTY WORKLOAD -->
+      <div class="panel" id="panel-2">
+        <div class="workload-select no-print">
+          <label style="font-weight:700;font-size:13px;">Faculty:</label>
+          <select id="wl-inst-sel" onchange="renderWorkload()"></select>
+          <button class="btn-print" onclick="window.print()">🖨️ Print Workload</button>
+        </div>
+        <div id="workload-doc"></div>
+      </div>
+
+      <!-- PANEL 3: MANAGE DATA -->
+      <div class="panel" id="panel-3">
+        <div class="mgr-layout">
+
+          <!-- LEFT NAV -->
+          <nav class="mgr-nav">
+            <div class="mgr-nav-item active" onclick="mgSwitch('majors',this)"><span class="mgr-nav-num">①</span> Majors</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('rooms',this)"><span class="mgr-nav-num">②</span> Rooms</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('dayclusters',this)"><span class="mgr-nav-num">③</span> Day Clusters</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('timeslots',this)"><span class="mgr-nav-num">④</span> Time Slots</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('subjects',this)"><span class="mgr-nav-num">⑤</span> Courses</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('instructors',this)"><span class="mgr-nav-num">⑥</span> Instructors</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('credentials',this)"><span class="mgr-nav-num" style="color:var(--red);">🔐</span> Credentials</div>
+          </nav>
+
+          <!-- RIGHT CONTENT -->
+          <div class="mgr-content">
+
+            <!-- MAJORS -->
+            <div class="mgr-section active" id="mgs-majors">
+              <div class="mgr-section-title">Majors &amp; Minors</div>
+              <div class="mgr-section-sub">Add Major Specializations and Minor fields. These are used to assign instructor specializations and filter subjects.</div>
+
+              <!-- MAJOR SPECIALIZATION -->
+              <div style="margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--gold);">① Major Specialization</div>
+                <div class="mgr-list-wrap" id="major-list-major"></div>
+                <div class="mgr-add-box">
+                  <div class="mgr-add-row">
+                    <input type="text" id="nm-major" class="mgr-input" placeholder="e.g. Mathematics, Science, English" onkeydown="if(event.key==='Enter')addMajorType('Major')">
+                    <button class="mgr-btn" onclick="addMajorType('Major')">+ Add</button>
+                  </div>
+                  <div class="inline-err" id="nm-major-err"></div>
+                </div>
+              </div>
+
+              <!-- MINOR -->
+              <div style="margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--gold);">② Minor</div>
+                <div style="font-size:11px;color:var(--gray3);margin-bottom:6px;">Auto-synced from Major Specialization — no need to add separately.</div>
+                <div class="mgr-list-wrap" id="major-list-minor"></div>
+              </div>
+
+              <!-- Keep old id for backward compat (hidden) -->
+              <div id="major-list" style="display:none;"></div>
+              <div id="major-list-course" style="display:none;"></div>
+              <div class="inline-err" id="nm-err" style="display:none;"></div>
+            </div>
+
+            <!-- ROOMS -->
+            <div class="mgr-section" id="mgs-rooms">
+              <div class="mgr-section-title">Rooms / Locations</div>
+              <div class="mgr-section-sub">Add all classrooms, laboratories, and other venues used for scheduling.</div>
+              <div class="mgr-list-wrap" id="room-list"></div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Add Room</div>
+                <div class="mgr-add-row">
+                  <input type="text" id="nr" class="mgr-input" placeholder="e.g. Room 1, Physics Lab, TBA" onkeydown="if(event.key==='Enter')addRoom()">
+                  <button class="mgr-btn" onclick="addRoom()">+ Add</button>
+                </div>
+                <div class="inline-err" id="nr-err"></div>
+              </div>
+            </div>
+
+            <!-- DAY CLUSTERS -->
+            <div class="mgr-section" id="mgs-dayclusters">
+              <div class="mgr-section-title">Day Clusters</div>
+              <div class="mgr-section-sub">Define which days are grouped together for scheduling (e.g. Monday &amp; Thursday share the same time slots).</div>
+              <div class="mgr-hint">
+                <b>Example:</b> Key = <b>MTh</b> &nbsp;|&nbsp; Full label = <b>MTh — MONDAY &amp; THURSDAY</b>
+              </div>
+              <div class="mgr-list-wrap" id="dc-list"></div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Add Day Cluster</div>
+                <div class="mgr-add-row">
+                  <input type="text" id="ndc-key" class="mgr-input" placeholder="Key (e.g. MTh)" style="max-width:130px;flex:none;" onkeydown="if(event.key==='Enter')addDayCluster()">
+                  <input type="text" id="ndc-label" class="mgr-input" placeholder="Full label (e.g. MTh — MONDAY &amp; THURSDAY)" onkeydown="if(event.key==='Enter')addDayCluster()">
+                  <button class="mgr-btn" onclick="addDayCluster()">+ Add</button>
+                </div>
+                <div class="inline-err" id="ndc-err"></div>
+              </div>
+            </div>
+
+            <!-- TIME SLOTS -->
+            <div class="mgr-section" id="mgs-timeslots">
+              <div class="mgr-section-title">Time Slots</div>
+              <div class="mgr-section-sub">Add each class period in order from earliest to latest. Check "Lunch" on the first afternoon slot to insert a lunch break in the timetable.</div>
+              <div class="mgr-list-wrap" id="ts-list"></div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Add Time Slot</div>
+                <div class="mgr-add-row">
+                  <input type="text" id="nts-label" class="mgr-input" placeholder="e.g. 07:00 AM - 08:00 AM" onkeydown="if(event.key==='Enter')addTimeslot()">
+                  <label class="mgr-lunch-lbl"><input type="checkbox" id="nts-lunch"> Lunch marker</label>
+                  <button class="mgr-btn" onclick="addTimeslot()">+ Add</button>
+                </div>
+                <div class="inline-err" id="nts-err"></div>
+              </div>
+            </div>
+
+            <!-- INSTRUCTORS -->
+            <div class="mgr-section" id="mgs-instructors">
+              <div class="mgr-section-title">Instructors / Faculty</div>
+              <div class="mgr-section-sub">Add faculty members and assign their teaching majors. Majors must be added first.</div>
+              <div class="mgr-list-wrap" id="inst-list"></div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Add Instructor</div>
+                <div class="mgr-inst-grid">
+                  <input type="text" id="ni-name" class="mgr-input" placeholder="Full Name (e.g. JUAN D. DELA CRUZ, EdD)" onkeydown="if(event.key==='Enter')addInstructor()">
+                  <input type="text" id="ni-qual" class="mgr-input" placeholder="Educational Qualification">
+                  <select id="ni-rank" class="mgr-input" onchange="autoSG('ni-rank','ni-salary')">
+                    <option value="">-- Select Academic Rank --</option>
+                    <option value="Instructor I">Instructor I</option>
+                    <option value="Instructor II">Instructor II</option>
+                    <option value="Instructor III">Instructor III</option>
+                    <option value="Assistant Professor I">Assistant Professor I</option>
+                    <option value="Assistant Professor II">Assistant Professor II</option>
+                    <option value="Assistant Professor III">Assistant Professor III</option>
+                    <option value="Assistant Professor IV">Assistant Professor IV</option>
+                    <option value="Associate Professor I">Associate Professor I</option>
+                    <option value="Associate Professor II">Associate Professor II</option>
+                    <option value="Associate Professor III">Associate Professor III</option>
+                    <option value="Associate Professor IV">Associate Professor IV</option>
+                    <option value="Associate Professor V">Associate Professor V</option>
+                    <option value="Professor I">Professor I</option>
+                    <option value="Professor II">Professor II</option>
+                    <option value="Professor III">Professor III</option>
+                    <option value="Professor IV">Professor IV</option>
+                    <option value="Professor V">Professor V</option>
+                    <option value="Professor VI">Professor VI</option>
+                    <option value="University Professor">University Professor</option>
+                  </select>
+                  <div style="display:flex;gap:6px;">
+                    <select id="ni-status" class="mgr-input" style="flex:1;">
+                      <option value="Permanent">Permanent</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contractual">Contractual</option>
+                    </select>
+                    <input type="number" id="ni-service" class="mgr-input" placeholder="Yrs" min="0" style="width:70px;flex:none;">
+                    <input type="number" id="ni-salary" class="mgr-input" placeholder="SG" min="1" max="33" style="width:70px;flex:none;" readonly style="background:#f0f3f8;">
+                  </div>
+                </div>
+                <div class="mgr-majors-section">
+                  <div class="section-label">MAJOR SPECIALIZATION &amp; MINOR <span style="color:var(--red)">*</span></div>
+                  <div class="major-checkbox-group" id="ni-majors"></div>
+                </div>
+                <div class="mgr-majors-section" style="margin-top:10px;">
+                  <div class="section-label"> ALLIED FIELDS</div>
+                  <div style="font-size:11px;color:var(--gray3);margin-bottom:5px;">Other majors/minors this instructor is qualified to teach.</div>
+                  <div style="border:1.5px solid var(--gray2);border-radius:5px;padding:6px;background:#fff;max-height:130px;overflow-y:auto;">
+                    <div id="ni-subjects"><div style="font-size:11px;color:#aaa;">Add majors first.</div></div>
+                  </div>
+                </div>
+                <div class="inline-err" id="ni-err"></div>
+                <button onclick="addInstructor()" class="mgr-add-inst-btn">+ Add Instructor</button>
+              </div>
+            </div>
+
+            <!-- SUBJECTS -->
+            <div class="mgr-section" id="mgs-subjects">
+              <div class="mgr-section-title">Courses</div>
+              <div class="mgr-section-sub">Add all subjects/courses. Set <b>Program</b> to filter by BEED or BSED — when assigning schedules, the system auto-filters based on the section name (e.g. <b>BEED 1A</b> → BEED + 1st year subjects only, <b>BSED 2B</b> → BSED + 2nd year subjects only). Use <b>All Programs</b> for GE subjects shared by both.</div>
+              <div class="mgr-list-wrap" id="subj-list"></div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Add Course</div>
+                <div class="mgr-add-row">
+                  <input type="text" id="ns-code" class="mgr-input" placeholder="Course Code (e.g. Chem 1)" onkeydown="if(event.key==='Enter')addSubject()">
+                  <input type="text" id="ns-desc" class="mgr-input" placeholder="Descriptive Title" onkeydown="if(event.key==='Enter')addSubject()">
+                  <input type="number" id="ns-units" class="mgr-input" placeholder="Units" min="1" max="6" style="max-width:80px;flex:none;" onkeydown="if(event.key==='Enter')addSubject()">
+                </div>
+                <div class="mgr-add-row">
+                  <select id="ns-major" class="mgr-input"></select>
+                  <select id="ns-year" class="mgr-input" style="max-width:140px;flex:none;">
+                    <option value="0">All Year Levels</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                  <select id="ns-program" class="mgr-input" style="max-width:140px;flex:none;">
+                    <option value="Both">All Programs</option>
+                    <option value="BEED">BEED only</option>
+                    <option value="BSED">BSED only</option>
+                  </select>
+                </div>
+                <div class="mgr-add-row" style="align-items:center;gap:10px;">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="ns-islab" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;">
+                    <span>Laboratory subject</span>
+                  </label>
+                  <span style="font-size:11px;color:var(--gray3);">(Lab: 2 units = 4.5 WL units; 1 unit = 2.25 WL units)</span>
+                  <button class="mgr-btn" onclick="addSubject()" style="margin-left:auto;">+ Add</button>
+                </div>
+                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter.</div>
+                <div class="inline-err" id="ns-err"></div>
+              </div>
+            </div>
+
+            <!-- CREDENTIALS -->
+            <div class="mgr-section" id="mgs-credentials">
+              <div class="mgr-section-title">Change Admin Credentials</div>
+              <div class="mgr-section-sub">Update the admin username and/or password. You must enter your current password to make changes.</div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Update Credentials</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <input type="text" id="pwd-username" class="mgr-input" placeholder="New username (leave blank to keep current)" autocomplete="off" onkeydown="if(event.key==='Enter')changePassword()">
+                  <div class="pwd-wrap">
+                    <input type="password" id="pwd-current" class="mgr-input" placeholder="Current password" autocomplete="current-password" style="padding-right:40px;" onkeydown="if(event.key==='Enter')changePassword()">
+                    <button type="button" class="eye-btn" onclick="togglePwd('pwd-current',this)" tabindex="-1">👁</button>
+                  </div>
+                  <div class="pwd-wrap">
+                    <input type="password" id="pwd-new" class="mgr-input" placeholder="New password (min. 6 characters)" autocomplete="new-password" style="padding-right:40px;" onkeydown="if(event.key==='Enter')changePassword()">
+                    <button type="button" class="eye-btn" onclick="togglePwd('pwd-new',this)" tabindex="-1">👁</button>
+                  </div>
+                  <button class="mgr-btn" onclick="changePassword()" style="align-self:flex-start;">Update Credentials</button>
+                </div>
+                <div class="inline-err" id="pwd-err"></div>
+                <div class="auth-success" id="pwd-ok" style="text-align:left;margin-top:8px;">Credentials updated successfully.</div>
+              </div>
+            </div>
+
+          </div><!-- end mgr-content -->
+        </div><!-- end mgr-layout -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT SCHEDULE MODAL -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:15px;font-weight:700;color:var(--navy);margin:0;">Edit Schedule</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray3);">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Instructor</label>
+        <select id="em-instructor" class="mgr-input" onchange="editFilterSubjects()" style="width:100%;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Subject</label>
+        <select id="em-subject" class="mgr-input" style="width:100%;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Section</label>
+        <input type="text" id="em-section" class="mgr-input" style="width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Number of Students</label>
+        <input type="number" id="em-students" class="mgr-input" min="0" max="999" style="width:100%;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Day Cluster</label>
+        <select id="em-day" class="mgr-input" style="width:100%;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Time Slot</label>
+        <select id="em-timeslot" class="mgr-input" style="width:100%;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Room</label>
+        <select id="em-room" class="mgr-input" style="width:100%;"></select>
+      </div>
+      <div id="em-err" style="font-size:12px;color:var(--red);display:none;font-weight:600;padding:8px 12px;background:#fdf2f2;border-radius:6px;border-left:4px solid var(--red);"></div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button onclick="saveEditSchedule()" style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">Save Changes</button>
+        <button onclick="deleteScheduleFromModal()" style="background:none;border:1.5px solid var(--red);color:var(--red);border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- EDIT SCHEDULE MODAL -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:700;color:var(--navy);">Edit Schedule</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray3);line-height:1;">✕</button>
+    </div>
+    <input type="hidden" id="em-id">
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Instructor</label>
+      <select id="em-instructor" class="mgr-input" style="width:100%;" onchange="emFilterSubjects()"></select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Subject</label>
+      <select id="em-subject" class="mgr-input" style="width:100%;"></select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Section</label>
+      <input type="text" id="em-section" class="mgr-input" style="width:100%;" placeholder="e.g. BEED 1A">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Number of Students</label>
+      <input type="number" id="em-students" class="mgr-input" style="width:100%;" min="0" placeholder="e.g. 35">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Day Cluster</label>
+      <select id="em-day" class="mgr-input" style="width:100%;"></select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Time Slot</label>
+      <select id="em-timeslot" class="mgr-input" style="width:100%;"></select>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Room</label>
+      <select id="em-room" class="mgr-input" style="width:100%;"></select>
+    </div>
+    <div id="em-err" style="font-size:12px;color:var(--red);margin-bottom:10px;display:none;font-weight:600;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="saveEditSchedule()" style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">Save Changes</button>
+      <button onclick="deleteScheduleFromModal()" style="background:transparent;color:var(--red);border:1.5px solid var(--red);border-radius:7px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
