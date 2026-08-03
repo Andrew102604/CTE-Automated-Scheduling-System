@@ -53,13 +53,15 @@ async function init() {
       is_lunch_marker INTEGER NOT NULL DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS instructors (
-      id            INTEGER PRIMARY KEY AUTOINCREMENT,
-      name          TEXT NOT NULL,
-      status        TEXT NOT NULL DEFAULT 'Permanent',
-      rank          TEXT,
-      qualification TEXT,
-      years_service INTEGER DEFAULT 0,
-      salary_grade  INTEGER
+      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+      name               TEXT NOT NULL,
+      status             TEXT NOT NULL DEFAULT 'Permanent',
+      rank               TEXT,
+      qualification      TEXT,
+      years_service      INTEGER DEFAULT 0,
+      salary_grade       INTEGER,
+      designation        TEXT,
+      designation_units  REAL DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS instructor_majors (
       instructor_id  INTEGER NOT NULL REFERENCES instructors(id) ON DELETE CASCADE,
@@ -95,6 +97,8 @@ async function init() {
   // Migrations for DBs created before certain columns existed.
   try { await db.execute(`ALTER TABLE subjects ADD COLUMN is_lab INTEGER NOT NULL DEFAULT 0`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE majors ADD COLUMN type TEXT NOT NULL DEFAULT 'Major'`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation TEXT`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try {
     await db.execute(`CREATE TABLE IF NOT EXISTS instructor_can_handle (
       instructor_id INTEGER NOT NULL REFERENCES instructors(id) ON DELETE CASCADE,
