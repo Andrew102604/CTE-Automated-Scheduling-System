@@ -892,8 +892,24 @@ function renderWorkload(){
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${desigForBlock}</td>
             <td style="border:1.5px solid #444;padding:5px 8px;"></td>
           </tr>`:''}
-          <tr><td colspan="7" style="height:20px;border:1.5px solid #444;"></td></tr>
-          <tr><td colspan="7" style="height:20px;border:1.5px solid #444;"></td></tr>
+          <tr>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+          </tr>
+          <tr>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+            <td style="border:1.5px solid #444;height:20px;"></td>
+          </tr>
         </tbody>
       </table>
       <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:Arial,sans-serif;margin-top:-1px;table-layout:fixed;">
