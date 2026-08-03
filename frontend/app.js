@@ -883,6 +883,15 @@ function renderWorkload(){
           </tr>
         </thead>
         <tbody>${buildTable(arr)}
+          ${desigForBlock?`<tr>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">${escHtml(desigNameForBlock||'—')}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${desigForBlock}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>`:''}
           <tr><td colspan="7" style="height:20px;border:1.5px solid #444;"></td></tr>
           <tr><td colspan="7" style="height:20px;border:1.5px solid #444;"></td></tr>
         </tbody>
