@@ -725,13 +725,16 @@ function renderWorkload(){
     return (tsOrder[a.timeslot_label]??999)-(tsOrder[b.timeslot_label]??999);
   });
 
-  // Designation (e.g. Extension Coordinator) reserves space inside the
-  // Regular 18-unit ceiling first; whatever teaching-load units no longer
-  // fit spill over into Overload -> Emergency -> Praise, in that order.
+  // Designation (e.g. Extension Coordinator) and Special Assignment (e.g. a
+  // Research/Extension Project) both reserve space inside the Regular
+  // 18-unit ceiling first; whatever teaching-load units no longer fit
+  // spill over into Overload -> Emergency -> Praise, in that order.
   const desigUnits=inst.designation_units||0;
   const desigName=inst.designation||'';
+  const specialUnits=inst.special_assignment_units||0;
+  const specialName=inst.special_assignment||'';
 
-  let regular=[],overload=[],emergency=[],praise=[],accum=desigUnits;
+  let regular=[],overload=[],emergency=[],praise=[],accum=desigUnits+specialUnits;
   for(const r of rows){
     const wu=wlUnits(r);
     if(accum+wu<=LOAD_MAX.regular){regular.push(r);accum+=wu;}
@@ -757,8 +760,8 @@ function renderWorkload(){
   // Each workload card gets a unique ID for JS toggling
   let wlCardIdx = 0;
 
-  const block=(label,arr,total,desigForBlock=0,desigNameForBlock='')=>{
-    if(!arr.length&&!desigForBlock)return'';
+  const block=(label,arr,total,desigForBlock=0,desigNameForBlock='',specialForBlock=0,specialNameForBlock='')=>{
+    if(!arr.length&&!desigForBlock&&!specialForBlock)return'';
     const noPrep=[...new Set(arr.map(r=>r.code))].length;
     const majOnlyStr=inst.majors.filter(m=>(m.type||'Major')==='Major').map(m=>m.name).join(', ')||'—';
     const minorStr=inst.majors.filter(m=>m.type==='Minor').map(m=>m.name).join(', ')||'';
@@ -931,10 +934,10 @@ function renderWorkload(){
           <tr>
             <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">Add. Special Assignment</td>
             <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;" contenteditable="true">${escHtml(specialNameForBlock)}</td>
             <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-special" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">0</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-special" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${specialForBlock||0}</td>
             <td style="border:1.5px solid #444;"></td>
           </tr>
           <tr>
@@ -943,7 +946,7 @@ function renderWorkload(){
             <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)+(specialForBlock||0)}</td>
             <td style="border:1.5px solid #444;"></td>
           </tr>
         </tbody>
@@ -970,7 +973,7 @@ function renderWorkload(){
     </div>`;
   };
   c.innerHTML=
-    block('Regular',regular,regular.reduce((a,r)=>a+wlUnits(r),0),desigUnits,desigName)+
+    block('Regular',regular,regular.reduce((a,r)=>a+wlUnits(r),0),desigUnits,desigName,specialUnits,specialName)+
     block('Overload',overload,overload.reduce((a,r)=>a+wlUnits(r),0))+
     block('Emergency',emergency,emergency.reduce((a,r)=>a+wlUnits(r),0))+
     block('Praise',praise,praise.reduce((a,r)=>a+wlUnits(r),0));
@@ -1017,6 +1020,7 @@ function renderManageData(){
               <div class="lsub">${escHtml(i.status)} | ${escHtml(i.rank||'—')}</div>
               <div class="lsub">${escHtml(i.qualification||'')}${i.years_service?' | '+i.years_service+' yrs':''}${i.salary_grade?' | SG '+i.salary_grade:''}</div>
               ${i.designation?`<div class="lsub"><b>Designation:</b> ${escHtml(i.designation)} (${i.designation_units||0} units)</div>`:''}
+              ${i.special_assignment?`<div class="lsub"><b>Special Assignment:</b> ${escHtml(i.special_assignment)} (${i.special_assignment_units||0} units)</div>`:''}
               <div class="major-tags">${i.majors.map(m=>`<span class="major-tag">${escHtml(m.name)}</span>`).join('')}</div>
               ${(i.can_handle&&i.can_handle.length)?`<div style="font-size:10px;color:#555;margin-top:3px;"><b>Can handle:</b> ${[...new Set(i.can_handle.map(m=>m.name))].map(n=>escHtml(n)).join(', ')}</div>`:''}
             </div>
@@ -1062,6 +1066,10 @@ function renderManageData(){
             <div style="display:flex;gap:6px;margin-bottom:6px;">
               <input type="text" id="inst-desig-${i.id}" value="${escAttr(i.designation||'')}" placeholder="Designation (e.g. Extension Coordinator)" style="flex:1;">
               <input type="number" id="inst-desigunits-${i.id}" value="${i.designation_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input type="text" id="inst-special-${i.id}" value="${escAttr(i.special_assignment||'')}" placeholder="Special Assignment (e.g. Research Project)" style="flex:1;">
+              <input type="number" id="inst-specialunits-${i.id}" value="${i.special_assignment_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
             <div style="font-size:11px;font-weight:700;color:var(--gray3);margin-bottom:4px;">MAJORS</div>
             <div style="border:1.5px solid var(--gray2);border-radius:5px;padding:6px;background:#fff;max-height:100px;overflow-y:auto;margin-bottom:8px;">
@@ -1256,14 +1264,16 @@ async function addInstructor(){
   const salary_grade=parseInt(document.getElementById('ni-salary').value)||null;
   const designation=document.getElementById('ni-desig').value.trim();
   const designation_units=parseFloat(document.getElementById('ni-desig-units').value)||0;
+  const special_assignment=document.getElementById('ni-special').value.trim();
+  const special_assignment_units=parseFloat(document.getElementById('ni-special-units').value)||0;
   const major_ids=[...document.querySelectorAll('#ni-majors input:checked')].map(cb=>parseInt(cb.value));
   const can_handle_ids=[...document.querySelectorAll('.ni-subj-cb:checked')].map(cb=>parseInt(cb.value));
   const err=document.getElementById('ni-err');err.style.display='none';
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,major_ids,can_handle_ids});
-    ['ni-name','ni-qual','ni-rank','ni-service','ni-salary','ni-desig','ni-desig-units'].forEach(id=>document.getElementById(id).value='');
+    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,major_ids,can_handle_ids});
+    ['ni-name','ni-qual','ni-rank','ni-service','ni-salary','ni-desig','ni-desig-units','ni-special','ni-special-units'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#ni-majors input').forEach(cb=>cb.checked=false);
     document.querySelectorAll('.ni-subj-cb').forEach(cb=>cb.checked=false);
     await loadState();renderAll();
@@ -1594,6 +1604,8 @@ async function saveEditInstructor(id){
   const salary_grade=parseInt(document.getElementById(`inst-sg-${id}`).value)||null;
   const designation =document.getElementById(`inst-desig-${id}`).value.trim();
   const designation_units=parseFloat(document.getElementById(`inst-desigunits-${id}`).value)||0;
+  const special_assignment=document.getElementById(`inst-special-${id}`).value.trim();
+  const special_assignment_units=parseFloat(document.getElementById(`inst-specialunits-${id}`).value)||0;
   const major_ids      =[...document.querySelectorAll(`#inst-edit-${id} input[type=checkbox]:not(.inst-ch-cb-${id}):checked`)].map(cb=>parseInt(cb.value));
   const can_handle_ids =[...document.querySelectorAll(`.inst-ch-cb-${id}:checked`)].map(cb=>parseInt(cb.value));
   const err         =document.getElementById(`inst-err-${id}`);
@@ -1601,7 +1613,7 @@ async function saveEditInstructor(id){
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,major_ids,can_handle_ids});
+    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,major_ids,can_handle_ids});
     await loadState();renderAll();
   }catch(e){err.textContent=e.message;err.style.display='block';}
 }

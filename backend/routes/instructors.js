@@ -45,16 +45,16 @@ router.get('/instructors/:id', async (req, res) => {
 });
 
 router.post('/instructors', async (req, res) => {
-  const { name, status, rank, qualification, years_service, salary_grade, designation, designation_units, major_ids, can_handle_ids } = req.body;
+  const { name, status, rank, qualification, years_service, salary_grade, designation, designation_units, special_assignment, special_assignment_units, major_ids, can_handle_ids } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Instructor name is required.' });
   if (!Array.isArray(major_ids) || major_ids.length === 0)
     return res.status(400).json({ error: 'Select at least one major.' });
   const tx = await db.transaction('write');
   try {
     const info = await tx.execute({
-      sql: `INSERT INTO instructors (name, status, rank, qualification, years_service, salary_grade, designation, designation_units)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [name.trim(), status||'Permanent', rank||null, qualification||null, years_service||0, salary_grade||null, (designation||'').trim()||null, designation_units||0]
+      sql: `INSERT INTO instructors (name, status, rank, qualification, years_service, salary_grade, designation, designation_units, special_assignment, special_assignment_units)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [name.trim(), status||'Permanent', rank||null, qualification||null, years_service||0, salary_grade||null, (designation||'').trim()||null, designation_units||0, (special_assignment||'').trim()||null, special_assignment_units||0]
     });
     const instId = Number(info.lastInsertRowid);
     for (const mid of major_ids)
@@ -74,16 +74,18 @@ router.put('/instructors/:id', async (req, res) => {
     const existingR = await db.execute({ sql: `SELECT * FROM instructors WHERE id = ?`, args: [id] });
     const existing = existingR.rows[0];
     if (!existing) return res.status(404).json({ error: 'Instructor not found.' });
-    const { name, status, rank, qualification, years_service, salary_grade, designation, designation_units, major_ids, can_handle_ids } = req.body;
+    const { name, status, rank, qualification, years_service, salary_grade, designation, designation_units, special_assignment, special_assignment_units, major_ids, can_handle_ids } = req.body;
     const tx = await db.transaction('write');
     try {
       await tx.execute({
-        sql: `UPDATE instructors SET name=?,status=?,rank=?,qualification=?,years_service=?,salary_grade=?,designation=?,designation_units=? WHERE id=?`,
+        sql: `UPDATE instructors SET name=?,status=?,rank=?,qualification=?,years_service=?,salary_grade=?,designation=?,designation_units=?,special_assignment=?,special_assignment_units=? WHERE id=?`,
         args: [name?.trim()||existing.name, status||existing.status, rank??existing.rank,
                qualification??existing.qualification, years_service??existing.years_service,
                salary_grade??existing.salary_grade,
                (designation!==undefined?(designation||'').trim()||null:existing.designation),
-               (designation_units!==undefined?(designation_units||0):existing.designation_units), id]
+               (designation_units!==undefined?(designation_units||0):existing.designation_units),
+               (special_assignment!==undefined?(special_assignment||'').trim()||null:existing.special_assignment),
+               (special_assignment_units!==undefined?(special_assignment_units||0):existing.special_assignment_units), id]
       });
       if (Array.isArray(major_ids)) {
         await tx.execute({ sql: `DELETE FROM instructor_majors WHERE instructor_id=?`, args: [id] });
