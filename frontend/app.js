@@ -883,15 +883,6 @@ function renderWorkload(){
           </tr>
         </thead>
         <tbody>${buildTable(arr)}
-          ${desigForBlock?`<tr>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">${escHtml(desigNameForBlock||'—')}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${desigForBlock}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-          </tr>`:''}
           <tr>
             <td style="border:1.5px solid #444;height:20px;"></td>
             <td style="border:1.5px solid #444;height:20px;"></td>
@@ -927,8 +918,10 @@ function renderWorkload(){
           <td style="border:1.5px solid #444;padding:5px 8px;"></td>
         </tr>
         <tr>
-          <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">Add. Designation${desigNameForBlock?` — <span style="font-weight:700;">${escHtml(desigNameForBlock)}</span>`:''}</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" id="${cardId}-desig" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${desigForBlock||0}</td>
+          <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">Add. Designation</td>
+          <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;" contenteditable="true">${escHtml(desigNameForBlock)}</td>
+          <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;"></td>
+          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-desig" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${desigForBlock||0}</td>
           <td style="border:1.5px solid #444;padding:5px 8px;"></td>
         </tr>
         <tr>
