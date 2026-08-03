@@ -60,9 +60,20 @@ body{font-family:Arial,sans-serif;background:var(--offwhite);color:var(--text);m
   width:var(--sidebar-w);min-width:var(--sidebar-w);
   background:var(--white);border-right:2px solid var(--gray1);
   display:flex;flex-direction:column;overflow-y:auto;
-  transition:transform .3s;
+  transition:transform .3s,width .25s,min-width .25s;
 }
-#sidebar h2{background:var(--navy);color:#fff;padding:13px 18px;font-size:13px;font-weight:700;}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;overflow:hidden;}
+#sidebar h2{background:var(--navy);color:#fff;padding:13px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#sidebar-close-btn{background:transparent;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;padding:0 2px;}
+#sidebar-close-btn:hover{opacity:.75;}
+#sidebar-open-btn{
+  display:none;position:fixed;top:70px;left:0;z-index:50;
+  background:var(--navy);color:#fff;border:none;border-radius:0 8px 8px 0;
+  padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;
+  box-shadow:2px 2px 6px rgba(0,0,0,.2);
+}
+#sidebar-open-btn:hover{background:var(--navy2);}
+#sidebar-open-btn.show{display:block;}
 .form-section{padding:13px 18px;border-bottom:1px solid var(--gray1);}
 .form-section label{display:block;font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
 .form-section select,.form-section input[type=text]{width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;color:var(--text);background:var(--offwhite);}
@@ -475,8 +486,9 @@ body.printing-timetable #overlay{display:none!important;}
 </div>
 
 <div id="app">
+  <button id="sidebar-open-btn" class="no-print" onclick="toggleSidebar()">☰ Assign Schedule</button>
   <div id="sidebar">
-    <h2>ASSIGN SCHEDULE</h2>
+    <h2><span>ASSIGN SCHEDULE</span><button id="sidebar-close-btn" onclick="toggleSidebar()" title="Hide panel">✕</button></h2>
     <div id="setup-needed-box" class="setup-needed" style="display:none;"></div>
     <div id="assign-form-fields">
       <div class="form-section">

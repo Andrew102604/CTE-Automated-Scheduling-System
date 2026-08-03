@@ -98,6 +98,15 @@ function wlRecalcTotal(cardId){
   totalEl.textContent=base+desig+special;
 }
 
+// Collapses/expands the "ASSIGN SCHEDULE" sidebar so the user can reclaim
+// screen space for the timetable/grid, similar to a standard sidebar toggle.
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const openBtn=document.getElementById('sidebar-open-btn');
+  const collapsed=sb.classList.toggle('collapsed');
+  openBtn.classList.toggle('show',collapsed);
+}
+
 function wlToggle(el){
   const val    = el.dataset.val;
   const cardId = el.dataset.card;
