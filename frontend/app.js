@@ -102,9 +102,9 @@ function wlRecalcTotal(cardId){
 // screen space for the timetable/grid, similar to a standard sidebar toggle.
 function toggleSidebar(){
   const sb=document.getElementById('sidebar');
-  const openBtn=document.getElementById('sidebar-open-btn');
+  const btn=document.getElementById('sidebar-toggle-btn');
   const collapsed=sb.classList.toggle('collapsed');
-  openBtn.classList.toggle('show',collapsed);
+  btn.textContent=collapsed?'›':'‹';
 }
 
 function wlToggle(el){
