@@ -887,24 +887,6 @@ function renderWorkload(){
         </thead>
         <tbody>${buildTable(arr)}
           <tr>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-          </tr>
-          <tr>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-            <td style="border:1.5px solid #444;height:20px;"></td>
-          </tr>
-          <tr>
             <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">No. of Units</td>
             <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;"></td>
