@@ -366,8 +366,40 @@ function dayDisplay(key){const d=STATE.dayClusters.find(x=>x.key===key);return d
 // ============================================================
 // PRINT
 // ============================================================
-function printTimetableOnly(){document.body.classList.add('printing-timetable');window.print();}
-window.addEventListener('afterprint',()=>document.body.classList.remove('printing-timetable'));
+// Shrinks each day-group timetable (Monday & Wednesday, Tuesday & Thursday, etc.)
+// uniformly so it always fits on exactly one printed landscape page, no matter
+// how many time-slot rows or room columns it has. This preserves the exact
+// on-screen look (same fonts/colors/wrapping) instead of forcing a fixed tiny
+// font-size that may still overflow a page with lots of rows.
+function printTimetableOnly(){
+  document.body.classList.add('printing-timetable');
+  const wraps = document.querySelectorAll('#panel-0 .grid-wrap');
+  const mmToPx = 96/25.4;
+  const pageWpx = (297-16)*mmToPx; // A4 landscape minus 8mm margins each side
+  const pageHpx = (210-16)*mmToPx;
+  wraps.forEach(w=>{
+    w.style.transform='none';
+    w.style.transformOrigin='';
+    w.style.width='';
+    w.style.height='';
+    const rect=w.getBoundingClientRect();
+    const scale=Math.min(pageWpx/rect.width, pageHpx/rect.height, 1);
+    w.style.transformOrigin='top left';
+    w.style.transform=`scale(${scale})`;
+    w.style.width=rect.width+'px';
+    w.style.height=(rect.height*scale)+'px';
+  });
+  window.print();
+}
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('printing-timetable');
+  document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{
+    w.style.transform='';
+    w.style.transformOrigin='';
+    w.style.width='';
+    w.style.height='';
+  });
+});
 
 // ============================================================
 // SIDEBAR — SETUP GATE + POPULATE

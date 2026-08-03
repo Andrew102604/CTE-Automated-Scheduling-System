@@ -387,13 +387,10 @@ body.printing-timetable #overlay{display:none!important;}
   .doc-header{margin-bottom:6px!important;}
   .doc-header img{height:45px!important;}
   body.printing-timetable #panel-0{display:block!important;}
-  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;}
+  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;page-break-inside:avoid;}
   .grid-wrap:last-child{page-break-after:auto;}
   .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;}
-  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:7.5px;}
-  table.sched-grid th,table.sched-grid td{padding:2px;overflow:hidden;word-break:break-word;}
-  table.sched-grid td.time-col{width:auto;font-size:7px;}
-  table.sched-grid tr{page-break-inside:avoid;}
+  table.sched-grid{min-width:0!important;}
   table.sched-grid thead{display:table-header-group;}
   tr,td,th{page-break-inside:avoid;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
