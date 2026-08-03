@@ -769,7 +769,7 @@ function renderWorkload(){
           <div style="text-align:center;">
             <div style="font-size:11px;color:#333;margin-bottom:12px;">Prepared by:</div>
             <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
-            <div style="font-size:11px;margin-top:2px;" contenteditable="true">Department Chair / Dean</div>
+            <div style="font-size:11px;margin-top:2px;" contenteditable="true">Department Chair</div>
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:#333;margin-bottom:12px;">Conforme:</div>
