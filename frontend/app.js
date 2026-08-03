@@ -866,7 +866,7 @@ function renderWorkload(){
         <tr>
           <td><b>Status:</b> ${escHtml(inst.status)}</td>
           <td style="white-space:nowrap;"><b>Salary Grade:</b> <span style="display:inline-block;text-align:center;padding:0 4px;font-size:11px;">${inst.salary_grade||'—'}</span>
-              / <b>Academic Rank:</b> <input class="sign-line" value="${escAttr(inst.rank||'—')}" size="${Math.max((inst.rank||'—').length,2)}" style="border:none;display:inline-block;width:auto;font-size:11px;"></td>
+              / <b>Academic Rank:</b> <span style="display:inline-block;padding:0 4px;font-size:11px;">${escHtml(inst.rank||'—')}</span></td>
         </tr>
       </table>
 
