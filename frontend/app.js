@@ -100,7 +100,9 @@ function wlRecalcTotal(cardId){
 
 // Collapses/expands the "ASSIGN SCHEDULE" sidebar so the user can reclaim
 // screen space for the timetable/grid, similar to a standard sidebar toggle.
-function toggleSidebar(){
+// (Named distinctly from the mobile-hamburger toggleSidebar() below, which
+// toggles a different .open class + the dark #overlay backdrop.)
+function toggleAssignPanel(){
   const sb=document.getElementById('sidebar');
   const btn=document.getElementById('sidebar-toggle-btn');
   const collapsed=sb.classList.toggle('collapsed');
