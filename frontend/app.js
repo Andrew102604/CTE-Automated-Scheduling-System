@@ -901,39 +901,34 @@ function renderWorkload(){
             <td style="border:1.5px solid #444;height:20px;"></td>
             <td style="border:1.5px solid #444;height:20px;"></td>
           </tr>
+          <tr>
+            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">No. of Units</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;">${total}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>
+          <tr>
+            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">No. of Preparation</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;">${noPrep}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>
+          <tr>
+            <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">Add. Designation</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;" contenteditable="true">${escHtml(desigNameForBlock)}</td>
+            <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-desig" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${desigForBlock||0}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>
+          <tr>
+            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">Add. Special Assignment</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" id="${cardId}-special" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">0</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>
+          <tr>
+            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;font-weight:700;">Total No. of Units</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+          </tr>
         </tbody>
-      </table>
-      <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:Arial,sans-serif;margin-top:-1px;table-layout:fixed;">
-        <colgroup>
-          <col style="width:16%;"><col style="width:12%;"><col style="width:20%;"><col style="width:14%;"><col style="width:16%;"><col style="width:11%;"><col style="width:11%;">
-        </colgroup>
-        <tr>
-          <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">No. of Units</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;">${total}</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-        </tr>
-        <tr>
-          <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">No. of Preparation</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;">${noPrep}</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-        </tr>
-        <tr>
-          <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">Add. Designation</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;" contenteditable="true">${escHtml(desigNameForBlock)}</td>
-          <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;"></td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-desig" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${desigForBlock||0}</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-        </tr>
-        <tr>
-          <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;">Add. Special Assignment</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" id="${cardId}-special" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">0</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-        </tr>
-        <tr>
-          <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;font-weight:700;">Total No. of Units</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)}</td>
-          <td style="border:1.5px solid #444;padding:5px 8px;"></td>
-        </tr>
       </table>
 
       <div class="wl-sigs wl-sigs-2col" id="${cardId}-sigs">
