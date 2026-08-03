@@ -773,7 +773,7 @@ function renderWorkload(){
         <td style="border:1.5px solid #444;padding:5px 8px;">${escHtml(r.desc)}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${escHtml(r.section)}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${r.num_students||0}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${(()=>{const wu=wlUnits(r);return wu===r.units?r.units:wu.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1')+`<br><span style="font-size:9px;color:#888;">(${r.units} lab)</span>`;})()}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${(()=>{const wu=wlUnits(r);return wu%1===0?wu:wu.toFixed(2).replace(/0$/,'');})()}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${escHtml(r.room_name)}</td>
       </tr>`;
     }).join('');
