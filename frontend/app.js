@@ -860,13 +860,13 @@ function renderWorkload(){
           <td><b>Educational Qualification:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(inst.qualification||'—')}</span></td>
         </tr>
         <tr>
-          <td><b>Years in Service:</b> <input class="sign-line" value="${inst.years_service||'0'}" size="${Math.max(String(inst.years_service||'0').length,2)}" style="border:none;display:inline-block;text-align:center;width:auto;"></td>
+          <td><b>Years in Service:</b> <span style="display:inline-block;text-align:center;padding:0 4px;">${inst.years_service||'0'}</span></td>
           <td><b>Major:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(majOnlyStr)}</span>${minorStr?` / <b>Minor:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(minorStr)}</span>`:''}</td>
         </tr>
         <tr>
           <td><b>Status:</b> ${escHtml(inst.status)}</td>
-          <td><b>Salary Grade:</b> <input class="sign-line" value="${inst.salary_grade||'—'}" size="${Math.max(String(inst.salary_grade||'—').length,2)}" style="border:none;display:inline-block;text-align:center;width:auto;">
-              / <b>Academic Rank:</b> <input class="sign-line" value="${escAttr(inst.rank||'—')}" size="${Math.max((inst.rank||'—').length,2)}" style="border:none;display:inline-block;width:auto;"></td>
+          <td style="white-space:nowrap;"><b>Salary Grade:</b> <span style="display:inline-block;text-align:center;padding:0 4px;font-size:11px;">${inst.salary_grade||'—'}</span>
+              / <b>Academic Rank:</b> <input class="sign-line" value="${escAttr(inst.rank||'—')}" size="${Math.max((inst.rank||'—').length,2)}" style="border:none;display:inline-block;width:auto;font-size:11px;"></td>
         </tr>
       </table>
 
