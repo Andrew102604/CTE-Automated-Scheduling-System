@@ -867,7 +867,6 @@ function renderWorkload(){
         </tr>
       </table>
 
-      <div style="position:relative;">
       <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:Arial,sans-serif;margin-bottom:0;table-layout:fixed;">
         <colgroup>
           <col style="width:16%;"><col style="width:12%;"><col style="width:20%;"><col style="width:14%;"><col style="width:16%;"><col style="width:11%;"><col style="width:11%;">
@@ -903,41 +902,52 @@ function renderWorkload(){
             <td style="border:1.5px solid #444;height:20px;"></td>
           </tr>
           <tr>
-            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">No. of Units</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">No. of Units</td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;">${total}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
           </tr>
           <tr>
-            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">No. of Preparation</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">No. of Preparation</td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;">${noPrep}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
           </tr>
           <tr>
-            <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">Add. Designation</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">Add. Designation</td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;" contenteditable="true">${escHtml(desigNameForBlock)}</td>
-            <td colspan="2" style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-desig" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${desigForBlock||0}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
           </tr>
           <tr>
-            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;">Add. Special Assignment</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">Add. Special Assignment</td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;color:#000 !important;" id="${cardId}-special" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">0</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
           </tr>
           <tr>
-            <td colspan="5" style="border:1.5px solid #444;padding:5px 8px;font-weight:700;color:#000 !important;">Total No. of Units</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;font-weight:700;color:#000 !important;white-space:nowrap;overflow:visible;position:relative;">Total No. of Units</td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
+            <td style="border:1.5px solid #444;"></td>
             <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)}</td>
-            <td style="border:1.5px solid #444;padding:5px 8px;"></td>
+            <td style="border:1.5px solid #444;"></td>
           </tr>
         </tbody>
       </table>
-      <div style="position:absolute;top:0;bottom:0;left:16%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      <div style="position:absolute;top:0;bottom:0;left:28%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      <div style="position:absolute;top:0;bottom:0;left:48%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      <div style="position:absolute;top:0;bottom:0;left:62%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      <div style="position:absolute;top:0;bottom:0;left:78%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      <div style="position:absolute;top:0;bottom:0;left:89%;width:1.5px;background:#444;z-index:2;pointer-events:none;"></div>
-      </div>
 
       <div class="wl-sigs wl-sigs-2col" id="${cardId}-sigs">
         ${sigsNormal}
