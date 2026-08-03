@@ -65,11 +65,12 @@ body{font-family:Arial,sans-serif;background:var(--offwhite);color:var(--text);m
 #sidebar.collapsed{width:0;min-width:0;border-right:none;overflow:hidden;}
 #sidebar h2{background:var(--navy);color:#fff;padding:13px 18px;font-size:13px;font-weight:700;}
 #sidebar-toggle-wrap{
-  width:0;flex:none;position:relative;z-index:20;
-  display:flex;align-items:center;overflow:visible;
+  width:18px;min-width:18px;flex:none;position:relative;z-index:20;
+  display:flex;align-items:center;justify-content:center;overflow:visible;
+  background:var(--white);
 }
 #sidebar-toggle-btn{
-  width:22px;height:22px;border-radius:50%;margin-left:-11px;
+  width:22px;height:22px;border-radius:50%;
   background:#fff;border:1.5px solid var(--gray2);box-shadow:0 1px 4px rgba(0,0,0,.18);
   cursor:pointer;font-size:13px;line-height:1;color:var(--navy);font-weight:700;
   display:flex;align-items:center;justify-content:center;padding:0;
