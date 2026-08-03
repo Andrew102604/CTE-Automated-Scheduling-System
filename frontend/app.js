@@ -368,44 +368,30 @@ function dayDisplay(key){const d=STATE.dayClusters.find(x=>x.key===key);return d
 // ============================================================
 // Shrinks each day-group timetable (Monday & Wednesday, Tuesday & Thursday, etc.)
 // uniformly so it always fits on exactly one printed landscape page, no matter
-// how many time-slot rows or room columns it has. This preserves the exact
-// on-screen look (same fonts/colors/wrapping) instead of forcing a fixed tiny
-// font-size that may still overflow a page with lots of rows.
+// how many time-slot rows or room columns it has. Uses CSS `zoom` (not
+// `transform:scale`) because zoom actually resizes the element's layout box,
+// so print pagination sees the true shrunk size instead of clipping content
+// that was only visually scaled.
 function printTimetableOnly(){
   document.body.classList.add('printing-timetable');
-  // Wait a frame so the sidebar/topbar-hide reflow settles before we measure,
-  // and use scrollWidth/scrollHeight (true full content size) rather than
-  // getBoundingClientRect (which is clamped by the on-screen horizontal-scroll
-  // container and would give a wrong, too-small width).
   requestAnimationFrame(()=>{
     const mmToPx=96/25.4;
     const pageWpx=(297-16)*mmToPx; // A4 landscape minus 8mm margins each side
     const pageHpx=(210-16)*mmToPx;
     document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{
-      w.style.transform='none';
-      w.style.transformOrigin='';
-      w.style.width='';
-      w.style.height='';
+      w.style.zoom='';
       const table=w.querySelector('table.sched-grid');
       const contentW=(table?table.scrollWidth:w.scrollWidth)||w.scrollWidth;
       const contentH=w.scrollHeight;
       const scale=Math.min(pageWpx/contentW, pageHpx/contentH, 1);
-      w.style.transformOrigin='top left';
-      w.style.transform=`scale(${scale})`;
-      w.style.width=contentW+'px';
-      w.style.height=(contentH*scale)+'px';
+      w.style.zoom=scale;
     });
     window.print();
   });
 }
 window.addEventListener('afterprint',()=>{
   document.body.classList.remove('printing-timetable');
-  document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{
-    w.style.transform='';
-    w.style.transformOrigin='';
-    w.style.width='';
-    w.style.height='';
-  });
+  document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{ w.style.zoom=''; });
 });
 
 // ============================================================
