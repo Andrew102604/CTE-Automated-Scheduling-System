@@ -741,33 +741,58 @@ function renderWorkload(){
 
   // Designation (e.g. Extension Coordinator) and Special Assignment (e.g. a
   // Research/Extension Project) both reserve space inside the Regular
-  // 18-unit ceiling first; whatever teaching-load units no longer fit
-  // spill over into Overload -> Emergency -> Praise, in that order.
+  // 18-unit ceiling first. The remaining teaching-load subjects are then
+  // distributed Regular -> Overload -> Emergency -> Praise using a real
+  // subset-sum search at each tier: rather than a fixed rule like "whole
+  // numbers first", it tries every combination and picks whichever subset
+  // of subjects lands closest to (without exceeding) that tier's unit cap.
+  // This is what correctly handles cases where the exact-fit combination
+  // needs the fractional (lab) units rather than the whole-number ones.
   const desigUnits=inst.designation_units||0;
   const desigName=inst.designation||'';
   const specialUnits=inst.special_assignment_units||0;
   const specialName=inst.special_assignment||'';
 
-  let regular=[],overload=[],emergency=[],praise=[],accum=desigUnits+specialUnits;
-  // Whole-unit subjects (3, 6...) are placed before fractional lab-multiplier
-  // ones (4.5, 2.25...) within each tier, so Regular/Overload/etc. land on
-  // clean totals (e.g. exactly 18) instead of a fractional subject eating
-  // space that a whole-unit subject could have filled more cleanly; any
-  // fractional subject that doesn't fit cascades down to the next tier.
-  const sortedRows=[...rows].sort((a,b)=>{
-    const aFrac=Number.isInteger(wlUnits(a))?0:1;
-    const bFrac=Number.isInteger(wlUnits(b))?0:1;
-    return aFrac-bFrac;
-  });
-  for(const r of sortedRows){
-    const wu=wlUnits(r);
-    if(accum+wu<=LOAD_MAX.regular){regular.push(r);accum+=wu;}
-    else if(overload.reduce((a,x)=>a+wlUnits(x),0)+wu<=LOAD_MAX.overload)overload.push(r);
-    else if(emergency.reduce((a,x)=>a+wlUnits(x),0)+wu<=LOAD_MAX.emergency)emergency.push(r);
-    else praise.push(r);
+  // 0/1 knapsack: given a list of {row,units} items, finds the subset whose
+  // units sum is the maximum possible without exceeding `capacity`. Units
+  // are scaled by 4 (quarter-unit precision, since lab units are ×2.25) so
+  // the DP can work in integers.
+  function bestFit(items, capacity){
+    const SCALE=4;
+    const cap=Math.max(0,Math.round(capacity*SCALE));
+    const n=items.length;
+    const dp=Array.from({length:n+1},()=>new Uint16Array(cap+1));
+    for(let i=1;i<=n;i++){
+      const w=Math.round(items[i-1].units*SCALE);
+      for(let c=0;c<=cap;c++){
+        dp[i][c]=dp[i-1][c];
+        if(w<=c && dp[i-1][c-w]+w>dp[i][c])dp[i][c]=dp[i-1][c-w]+w;
+      }
+    }
+    let c=cap, selected=[];
+    for(let i=n;i>=1;i--){
+      if(dp[i][c]!==dp[i-1][c]){
+        selected.push(items[i-1]);
+        c-=Math.round(items[i-1].units*SCALE);
+      }
+    }
+    return selected;
   }
-  // The pass above only used whole-vs-fractional order to decide which tier
-  // each subject lands in; restore original schedule order for display.
+
+  let pool=rows.map(r=>({row:r,units:wlUnits(r)}));
+  const take=(capacity)=>{
+    const picked=bestFit(pool,capacity);
+    const pickedSet=new Set(picked);
+    pool=pool.filter(x=>!pickedSet.has(x));
+    return picked.map(x=>x.row);
+  };
+  const regular=take(LOAD_MAX.regular-(desigUnits+specialUnits));
+  const overload=take(LOAD_MAX.overload);
+  const emergency=take(LOAD_MAX.emergency);
+  const praise=pool.map(x=>x.row); // whatever's left, no cap - last resort
+
+  // Restore original schedule order for display within each tier (the
+  // subset-sum pass above only cared about which tier each subject lands in).
   const origIndex=new Map(rows.map((r,i)=>[r,i]));
   const byOrigOrder=(a,b)=>origIndex.get(a)-origIndex.get(b);
   regular.sort(byOrigOrder); overload.sort(byOrigOrder);
