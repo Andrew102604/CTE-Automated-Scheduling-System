@@ -31,6 +31,11 @@ async function init() {
       username      TEXT NOT NULL,
       password_hash TEXT NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS academic_settings (
+      id            INTEGER PRIMARY KEY CHECK (id = 1),
+      academic_year TEXT NOT NULL DEFAULT '2025-2026',
+      semester      TEXT NOT NULL DEFAULT '1st Semester'
+    )`,
     `CREATE TABLE IF NOT EXISTS majors (
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       name  TEXT NOT NULL,
@@ -103,6 +108,9 @@ async function init() {
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN special_assignment TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN special_assignment_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
+  try {
+    await db.execute(`INSERT OR IGNORE INTO academic_settings (id, academic_year, semester) VALUES (1, '2025-2026', '1st Semester')`);
+  } catch (e) { /* already exists */ }
   try {
     await db.execute(`CREATE TABLE IF NOT EXISTS instructor_can_handle (
       instructor_id INTEGER NOT NULL REFERENCES instructors(id) ON DELETE CASCADE,

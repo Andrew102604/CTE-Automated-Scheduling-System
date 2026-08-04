@@ -27,7 +27,8 @@ function autoSG(rankId, sgId){
 
 let STATE = {
   majors:[], rooms:[], dayClusters:[], timeslots:[],
-  instructors:[], subjects:[], schedules:[]
+  instructors:[], subjects:[], schedules:[],
+  settings:{academic_year:'2025-2026', semester:'1st Semester'}
 };
 
 // ============================================================
@@ -98,17 +99,6 @@ function wlRecalcTotal(cardId){
   totalEl.textContent=base+desig+special;
 }
 
-// Collapses/expands the "ASSIGN SCHEDULE" sidebar so the user can reclaim
-// screen space for the timetable/grid, similar to a standard sidebar toggle.
-// (Named distinctly from the mobile-hamburger toggleSidebar() below, which
-// toggles a different .open class + the dark #overlay backdrop.)
-function toggleAssignPanel(){
-  const sb=document.getElementById('sidebar');
-  const btn=document.getElementById('sidebar-toggle-btn');
-  const collapsed=sb.classList.toggle('collapsed');
-  btn.textContent=collapsed?'›':'‹';
-}
-
 function wlToggle(el){
   const val    = el.dataset.val;
   const cardId = el.dataset.card;
@@ -141,7 +131,7 @@ function wlToggle(el){
       </div>
       <div class="wl-sig-cell">
         <div class="wl-sig-label">Conformed by:</div>
-        <input class="sign-line" value="${name}">
+        <input class="sign-line" value="${name}" style="text-transform:uppercase;">
         <div class="sign-role" contenteditable="true" style="outline:none;">Faculty</div>
       </div>
       <div class="wl-sig-cell">
@@ -332,16 +322,35 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
 // ============================================================
 async function loadState(){instColorClear&&instColorClear();
   try{
-    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules]=await Promise.all([
+    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings]=await Promise.all([
       apiGet('/majors'),apiGet('/rooms'),apiGet('/day-clusters'),apiGet('/timeslots'),
-      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules')
+      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules'),apiGet('/settings')
     ]);
-    STATE={majors,rooms,dayClusters,timeslots,instructors,subjects,schedules};
+    STATE={majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings};
+    const acYearEl=document.getElementById('ac-year'), acSemEl=document.getElementById('ac-semester');
+    if(acYearEl)acYearEl.value=settings.academic_year||'2025-2026';
+    if(acSemEl)acSemEl.value=settings.semester||'1st Semester';
     setConn(true);
   }catch(e){
     setConn(false);
     if(!e.message.includes('Session'))showMsg(e.message,false);
   }
+}
+
+// Saves the global Academic Year + Semester (Manage Data section) so it can
+// auto-fill on the Class Program and Faculty Workload documents.
+async function saveAcademicSettings(){
+  const academic_year=document.getElementById('ac-year').value.trim();
+  const semester=document.getElementById('ac-semester').value;
+  const err=document.getElementById('ac-err'), ok=document.getElementById('ac-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!academic_year){err.textContent='Academic Year is required.';err.style.display='block';return;}
+  try{
+    const updated=await apiPut('/settings',{academic_year,semester});
+    STATE.settings=updated;
+    ok.style.display='block';
+    setTimeout(()=>ok.style.display='none',2500);
+  }catch(e){err.textContent=e.message;err.style.display='block';}
 }
 
 // ============================================================
@@ -366,33 +375,8 @@ function dayDisplay(key){const d=STATE.dayClusters.find(x=>x.key===key);return d
 // ============================================================
 // PRINT
 // ============================================================
-// Shrinks each day-group timetable (Monday & Wednesday, Tuesday & Thursday, etc.)
-// uniformly so it always fits on exactly one printed landscape page, no matter
-// how many time-slot rows or room columns it has. Uses CSS `zoom` (not
-// `transform:scale`) because zoom actually resizes the element's layout box,
-// so print pagination sees the true shrunk size instead of clipping content
-// that was only visually scaled.
-function printTimetableOnly(){
-  document.body.classList.add('printing-timetable');
-  requestAnimationFrame(()=>{
-    const mmToPx=96/25.4;
-    const pageWpx=(297-16)*mmToPx; // A4 landscape minus 8mm margins each side
-    const pageHpx=(210-16)*mmToPx;
-    document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{
-      w.style.zoom='';
-      const table=w.querySelector('table.sched-grid');
-      const contentW=(table?table.scrollWidth:w.scrollWidth)||w.scrollWidth;
-      const contentH=w.scrollHeight;
-      const scale=Math.min(pageWpx/contentW, pageHpx/contentH, 1);
-      w.style.zoom=scale;
-    });
-    window.print();
-  });
-}
-window.addEventListener('afterprint',()=>{
-  document.body.classList.remove('printing-timetable');
-  document.querySelectorAll('#panel-0 .grid-wrap').forEach(w=>{ w.style.zoom=''; });
-});
+function printTimetableOnly(){document.body.classList.add('printing-timetable');window.print();}
+window.addEventListener('afterprint',()=>document.body.classList.remove('printing-timetable'));
 
 // ============================================================
 // SIDEBAR — SETUP GATE + POPULATE
@@ -657,13 +641,7 @@ function renderClassProgram(){
       <div style="font-size:11px;">Tagbina Campus, Surigao del Sur</div>
       <div style="font-size:14px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:1px;">CLASS PROGRAM</div>
       <div style="font-size:11px;margin-top:4px;">
-        <select id="cp-semester" style="font-size:11px;border:none;border-bottom:1px solid #555;background:transparent;font-family:inherit;cursor:pointer;outline:none;padding:0 2px;">
-          <option>1st Semester</option>
-          <option>2nd Semester</option>
-          <option>Summer</option>
-        </select>
-        , Academic Year:&nbsp;
-        <input id="cp-ay" type="text" value="2025-2026" style="font-size:11px;border:none;border-bottom:1px solid #555;background:transparent;text-align:center;width:80px;font-family:inherit;outline:none;">
+        ${escHtml(STATE.settings?.semester||'1st Semester')}, Academic Year:&nbsp;<b>${escHtml(STATE.settings?.academic_year||'2025-2026')}</b>
       </div>
       <div style="font-size:11px;margin-top:3px;">Program, Year &amp; Section: <u>&nbsp;<b>${escHtml(section)}</b>&nbsp;</u></div>
     </div>
@@ -829,7 +807,7 @@ function renderWorkload(){
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:#333;margin-bottom:12px;">Conforme:</div>
-            <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(inst.name)}</div>
+            <div style="font-weight:700;font-size:12px;text-transform:uppercase;" contenteditable="true">${escHtml(inst.name)}</div>
             <div style="font-size:11px;margin-top:2px;" contenteditable="true">${escHtml(inst.rank||'Faculty')}</div>
           </div>
           <div style="text-align:center;">
@@ -871,13 +849,7 @@ function renderWorkload(){
         <div style="font-size:11px;">Tagbina Campus, Surigao del Sur</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:1px;">FACULTY WORKLOAD</div>
         <div style="font-size:11px;margin-top:4px;">
-          <select class="wl-semester-sel" style="font-size:11px;border:none;border-bottom:1px solid #555;background:transparent;font-family:inherit;cursor:pointer;outline:none;padding:0 2px;">
-            <option>1st Semester</option>
-            <option selected>2nd Semester</option>
-            <option>Summer</option>
-          </select>
-          , AY:&nbsp;
-          <input class="wl-ay-input" type="text" value="2025-2026" style="font-size:11px;border:none;border-bottom:1px solid #555;background:transparent;text-align:center;width:80px;font-family:inherit;outline:none;">
+          ${escHtml(STATE.settings?.semester||'2nd Semester')}, AY:&nbsp;<b>${escHtml(STATE.settings?.academic_year||'2025-2026')}</b>
         </div>
       </div>
 
@@ -896,13 +868,13 @@ function renderWorkload(){
           <td><b>Educational Qualification:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(inst.qualification||'—')}</span></td>
         </tr>
         <tr>
-          <td><b>Years in Service:</b> <span style="display:inline-block;text-align:center;padding:0 4px;">${inst.years_service||'0'}</span></td>
+          <td><b>Years in Service:</b> <input class="sign-line" value="${inst.years_service||'0'}" size="${Math.max(String(inst.years_service||'0').length,2)}" style="border:none;display:inline-block;text-align:center;width:auto;"></td>
           <td><b>Major:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(majOnlyStr)}</span>${minorStr?` / <b>Minor:</b> <span style="display:inline-block;word-break:break-word;white-space:normal;vertical-align:bottom;font-size:12px;padding:1px 2px;">${escHtml(minorStr)}</span>`:''}</td>
         </tr>
         <tr>
           <td><b>Status:</b> ${escHtml(inst.status)}</td>
-          <td style="white-space:nowrap;"><b>Salary Grade:</b> <span style="display:inline-block;text-align:center;padding:0 4px;font-size:11px;">${inst.salary_grade||'—'}</span>
-              / <b>Academic Rank:</b> <span style="display:inline-block;padding:0 4px;font-size:11px;">${escHtml(inst.rank||'—')}</span></td>
+          <td style="white-space:nowrap;"><b>Salary Grade:</b> <input class="sign-line" value="${inst.salary_grade||'—'}" size="${Math.max(String(inst.salary_grade||'—').length,2)}" style="border:none;display:inline-block;text-align:center;width:auto;font-size:11px;">
+              / <b>Academic Rank:</b> <input class="sign-line" value="${escAttr(inst.rank||'—')}" size="${Math.max((inst.rank||'—').length,2)}" style="border:none;display:inline-block;width:auto;font-size:11px;"></td>
         </tr>
       </table>
 

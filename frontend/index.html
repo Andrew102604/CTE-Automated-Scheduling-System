@@ -60,23 +60,9 @@ body{font-family:Arial,sans-serif;background:var(--offwhite);color:var(--text);m
   width:var(--sidebar-w);min-width:var(--sidebar-w);
   background:var(--white);border-right:2px solid var(--gray1);
   display:flex;flex-direction:column;overflow-y:auto;
-  transition:transform .3s,width .25s,min-width .25s;
+  transition:transform .3s;
 }
-#sidebar.collapsed{width:0;min-width:0;border-right:none;overflow:hidden;}
 #sidebar h2{background:var(--navy);color:#fff;padding:13px 18px;font-size:13px;font-weight:700;}
-#sidebar-toggle-wrap{
-  width:18px;min-width:18px;flex:none;position:relative;z-index:20;
-  display:flex;align-items:center;justify-content:center;overflow:visible;
-  background:var(--white);
-}
-#sidebar-toggle-btn{
-  width:22px;height:22px;border-radius:50%;
-  background:#fff;border:1.5px solid var(--gray2);box-shadow:0 1px 4px rgba(0,0,0,.18);
-  cursor:pointer;font-size:13px;line-height:1;color:var(--navy);font-weight:700;
-  display:flex;align-items:center;justify-content:center;padding:0;
-  transition:background .15s;
-}
-#sidebar-toggle-btn:hover{background:var(--gray1);}
 .form-section{padding:13px 18px;border-bottom:1px solid var(--gray1);}
 .form-section label{display:block;font-size:11px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
 .form-section select,.form-section input[type=text]{width:100%;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;color:var(--text);background:var(--offwhite);}
@@ -109,15 +95,15 @@ body{font-family:Arial,sans-serif;background:var(--offwhite);color:var(--text);m
    TIMETABLE
    ============================================================ */
 .grid-wrap{overflow-x:auto;margin-bottom:28px;border-radius:6px;box-shadow:var(--shadow);}
-.grid-header{background:#fff;color:var(--navy);padding:10px 16px;font-weight:700;font-size:13px;border:1px solid var(--gray2);border-bottom:2px solid var(--navy);}
+.grid-header{background:var(--navy);color:#fff;padding:10px 16px;font-weight:700;font-size:13px;}
 table.sched-grid{border-collapse:collapse;min-width:700px;width:100%;}
 table.sched-grid th,table.sched-grid td{border:1px solid var(--gray2);padding:5px 6px;text-align:center;font-size:11px;vertical-align:middle;}
 table.sched-grid td.time-col{background:#f0f3f8;font-weight:600;width:100px;font-size:10px;white-space:nowrap;}
-table.sched-grid th.corner{background:#fff;color:var(--navy);}
-table.sched-grid th.room-hdr{background:#fff;color:var(--navy);font-size:11px;font-weight:700;}
+table.sched-grid th.corner{background:#0d2b55;color:#fff;}
+table.sched-grid th.room-hdr{background:#1e3d59;color:#fff;font-size:11px;font-weight:700;}
 table.sched-grid th.sec-hdr{background:var(--gray1);color:var(--navy);font-size:10px;font-weight:700;min-width:80px;}
-table.sched-grid th.room-sep-top{background:#fff;border:none;padding:0;width:3px;}
-table.sched-grid td.room-sep{background:var(--gray2);border:none;width:3px;padding:0;}
+table.sched-grid th.room-sep-top{background:#0d2b55;border:none;padding:0;width:3px;}
+table.sched-grid td.room-sep{background:var(--navy);border:none;width:3px;padding:0;}
 table.sched-grid td.cell-empty{color:var(--gray2);font-size:10px;}
 table.sched-grid td.cell-used{font-size:10px;line-height:1.4;}
 table.sched-grid tr.lunch-row td{background:#fff3cd;color:#856404;font-weight:700;font-size:11px;padding:5px;border:1px solid #ffc107;}
@@ -390,8 +376,9 @@ body.printing-timetable #overlay{display:none!important;}
   .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;page-break-inside:avoid;}
   .grid-wrap:last-child{page-break-after:auto;}
   .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;}
-  table.sched-grid{min-width:0!important;}
-  table.sched-grid thead{display:table-header-group;}
+  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:7.5px;page-break-inside:avoid;}
+  table.sched-grid th,table.sched-grid td{padding:2px;overflow:hidden;word-break:break-word;}
+  table.sched-grid td.time-col{width:auto;font-size:7px;}
   tr,td,th{page-break-inside:avoid;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   .sign-line{border-bottom:1px solid #000!important;}
@@ -531,10 +518,6 @@ body.printing-timetable #overlay{display:none!important;}
     </div>
   </div>
 
-  <div id="sidebar-toggle-wrap" class="no-print">
-    <button id="sidebar-toggle-btn" onclick="toggleAssignPanel()" title="Hide/show panel">‹</button>
-  </div>
-
   <div id="main">
     <div id="tabs">
       <button class="tab-btn active" onclick="switchTab(0)">Timetable</button>
@@ -583,6 +566,7 @@ body.printing-timetable #overlay{display:none!important;}
             <div class="mgr-nav-item" onclick="mgSwitch('timeslots',this)"><span class="mgr-nav-num">④</span> Time Slots</div>
             <div class="mgr-nav-item" onclick="mgSwitch('subjects',this)"><span class="mgr-nav-num">⑤</span> Courses</div>
             <div class="mgr-nav-item" onclick="mgSwitch('instructors',this)"><span class="mgr-nav-num">⑥</span> Instructors</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('academic',this)"><span class="mgr-nav-num">⑦</span> Academic Year</div>
             <div class="mgr-nav-item" onclick="mgSwitch('credentials',this)"><span class="mgr-nav-num" style="color:var(--red);">🔐</span> Credentials</div>
           </nav>
 
@@ -773,6 +757,26 @@ body.printing-timetable #overlay{display:none!important;}
                 </div>
                 <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter.</div>
                 <div class="inline-err" id="ns-err"></div>
+              </div>
+            </div>
+
+            <!-- ACADEMIC YEAR / SEMESTER -->
+            <div class="mgr-section" id="mgs-academic">
+              <div class="mgr-section-title">Academic Year &amp; Semester</div>
+              <div class="mgr-section-sub">Set once here — it automatically fills the Academic Year and Semester on every Class Program and Faculty Workload document, so it no longer needs to be typed/edited on each one.</div>
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Current Setting</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <input type="text" id="ac-year" class="mgr-input" placeholder="Academic Year (e.g. 2025-2026)">
+                  <select id="ac-semester" class="mgr-input">
+                    <option>1st Semester</option>
+                    <option>2nd Semester</option>
+                    <option>Summer</option>
+                  </select>
+                  <button class="mgr-btn" onclick="saveAcademicSettings()" style="align-self:flex-start;">Save</button>
+                </div>
+                <div class="inline-err" id="ac-err"></div>
+                <div class="auth-success" id="ac-ok" style="text-align:left;margin-top:8px;">Academic Year &amp; Semester updated.</div>
               </div>
             </div>
 

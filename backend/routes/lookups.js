@@ -2,6 +2,26 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db/init');
 
+// ---------- ACADEMIC SETTINGS (Academic Year / Semester) ----------
+router.get('/settings', async (req, res) => {
+  try {
+    const r = await db.execute(`SELECT academic_year, semester FROM academic_settings WHERE id = 1`);
+    res.json(r.rows[0] || { academic_year: '2025-2026', semester: '1st Semester' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/settings', async (req, res) => {
+  const { academic_year, semester } = req.body;
+  if (!academic_year?.trim()) return res.status(400).json({ error: 'Academic Year is required.' });
+  if (!['1st Semester','2nd Semester','Summer'].includes(semester)) return res.status(400).json({ error: 'Invalid semester.' });
+  try {
+    await db.execute({
+      sql: `UPDATE academic_settings SET academic_year = ?, semester = ? WHERE id = 1`,
+      args: [academic_year.trim(), semester]
+    });
+    res.json({ academic_year: academic_year.trim(), semester });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ---------- MAJORS ----------
 router.get('/majors', async (req, res) => {
   try {
