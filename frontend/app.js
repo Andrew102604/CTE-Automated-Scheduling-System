@@ -749,13 +749,29 @@ function renderWorkload(){
   const specialName=inst.special_assignment||'';
 
   let regular=[],overload=[],emergency=[],praise=[],accum=desigUnits+specialUnits;
-  for(const r of rows){
+  // Whole-unit subjects (3, 6...) are placed before fractional lab-multiplier
+  // ones (4.5, 2.25...) within each tier, so Regular/Overload/etc. land on
+  // clean totals (e.g. exactly 18) instead of a fractional subject eating
+  // space that a whole-unit subject could have filled more cleanly; any
+  // fractional subject that doesn't fit cascades down to the next tier.
+  const sortedRows=[...rows].sort((a,b)=>{
+    const aFrac=Number.isInteger(wlUnits(a))?0:1;
+    const bFrac=Number.isInteger(wlUnits(b))?0:1;
+    return aFrac-bFrac;
+  });
+  for(const r of sortedRows){
     const wu=wlUnits(r);
     if(accum+wu<=LOAD_MAX.regular){regular.push(r);accum+=wu;}
     else if(overload.reduce((a,x)=>a+wlUnits(x),0)+wu<=LOAD_MAX.overload)overload.push(r);
     else if(emergency.reduce((a,x)=>a+wlUnits(x),0)+wu<=LOAD_MAX.emergency)emergency.push(r);
     else praise.push(r);
   }
+  // The pass above only used whole-vs-fractional order to decide which tier
+  // each subject lands in; restore original schedule order for display.
+  const origIndex=new Map(rows.map((r,i)=>[r,i]));
+  const byOrigOrder=(a,b)=>origIndex.get(a)-origIndex.get(b);
+  regular.sort(byOrigOrder); overload.sort(byOrigOrder);
+  emergency.sort(byOrigOrder); praise.sort(byOrigOrder);
 
   const B='border:1.5px solid #444;padding:6px 8px;';
   const buildTable=arr=>arr.map(r=>`<tr>
