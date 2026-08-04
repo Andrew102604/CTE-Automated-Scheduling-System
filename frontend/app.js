@@ -924,7 +924,7 @@ function renderWorkload(){
         <span class="wl-checkbox">${label==='Regular'?'✓':''}</span><span>Regular</span>
         <span class="wl-checkbox">${label==='Emergency'?'✓':''}</span><span>Emergency Load</span>
         <span class="wl-checkbox">${label==='Overload'?'✓':''}</span><span>Overload</span>
-        <span class="wl-checkbox">${label==='Praise'?'✓':''}</span><span>Praise Load</span>
+        <span class="wl-checkbox">${label==='Praise'?'✓':''}</span><span>PRAISE Load</span>
         <span class="wl-cb" data-card="${cardId}" data-val="Service Credit" onclick="wlToggle(this)"></span><span style="cursor:pointer;" onclick="wlToggle(this.previousElementSibling)">Service Credit</span>
         <span></span><span></span>
       </div>
