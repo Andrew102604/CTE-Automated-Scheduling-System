@@ -93,7 +93,8 @@ function togglePwd(inputId, btn) {
 function wlRecalcTotal(cardId){
   const totalEl=document.getElementById(cardId+'-total');
   if(!totalEl)return;
-  const base=parseFloat(totalEl.dataset.base)||0;
+  const unitsEl=document.getElementById(cardId+'-units');
+  const base=parseFloat(unitsEl?.textContent)||parseFloat(totalEl.dataset.base)||0;
   const desig=parseFloat(document.getElementById(cardId+'-desig')?.textContent)||0;
   const special=parseFloat(document.getElementById(cardId+'-special')?.textContent)||0;
   totalEl.textContent=base+desig+special;
@@ -826,15 +827,27 @@ function renderWorkload(){
       const dc=STATE.dayClusters.find(d=>d.key===r.day_key);
       const dayLabel=dc?dc.display:r.day_key;
       return `<tr>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;"><em style="font-weight:700;">${escHtml(dayLabel)}</em><br><span contenteditable="true" style="font-size:10px;outline:none;cursor:text;display:inline-block;min-width:20px;">${escHtml(r.timeslot_label)}</span></td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${escHtml(r.code)}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;">${escHtml(r.desc)}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${escHtml(r.section)}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${r.num_students||0}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${(()=>{const wu=wlUnits(r);return wu%1===0?wu:wu.toFixed(2).replace(/0$/,'');})()}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;">${escHtml(r.room_name)}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;"><em contenteditable="true" style="font-weight:700;outline:none;">${escHtml(dayLabel)}</em><br><span contenteditable="true" style="font-size:10px;outline:none;cursor:text;display:inline-block;min-width:20px;">${escHtml(r.timeslot_label)}</span></td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${escHtml(r.code)}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">${escHtml(r.desc)}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${escHtml(r.section)}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${r.num_students||0}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${(()=>{const wu=wlUnits(r);return wu%1===0?wu:wu.toFixed(2).replace(/0$/,'');})()}</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${escHtml(r.room_name)}</td>
       </tr>`;
-    }).join('');
+    }).join('')
+    // One blank editable row after the last subject, so extra subjects can
+    // be typed in directly for manual adjustments without needing a new
+    // schedule entry in the system.
+    + `<tr>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+      </tr>`;
 
     const sigsNormal=`
       <div style="font-family:Arial,sans-serif;font-size:12px;margin-top:28px;">
@@ -941,7 +954,7 @@ function renderWorkload(){
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;">${total}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-units" contenteditable="true" oninput="wlRecalcTotal('${cardId}')">${total}</td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
           </tr>
           <tr>
@@ -950,7 +963,7 @@ function renderWorkload(){
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;">${noPrep}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" contenteditable="true">${noPrep}</td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
           </tr>
           <tr>
