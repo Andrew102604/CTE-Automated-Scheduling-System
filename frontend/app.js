@@ -90,6 +90,19 @@ function togglePwd(inputId, btn) {
 // ============================================================
 // Recomputes a workload card's "Total No. of Units" whenever the
 // Add. Designation or Add. Special Assignment cells are hand-edited.
+// Recomputes "No. of Units" as the live sum of every subject row's Units
+// cell (including the blank adjustment row), then cascades into Total.
+// Runs whenever a subject's Units value is hand-edited.
+function wlRecalcUnitsSum(cardId){
+  const unitsEl=document.getElementById(cardId+'-units');
+  if(!unitsEl)return;
+  const cells=document.querySelectorAll('.wl-unit-cell-'+cardId);
+  let sum=0;
+  cells.forEach(c=>{ const v=parseFloat(c.textContent); if(!isNaN(v))sum+=v; });
+  unitsEl.textContent=(Math.round(sum*100)/100);
+  wlRecalcTotal(cardId);
+}
+
 function wlRecalcTotal(cardId){
   const totalEl=document.getElementById(cardId+'-total');
   if(!totalEl)return;
@@ -832,7 +845,7 @@ function renderWorkload(){
         <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">${escHtml(r.desc)}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${escHtml(r.section)}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${r.num_students||0}</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${(()=>{const wu=wlUnits(r);return wu%1===0?wu:wu.toFixed(2).replace(/0$/,'');})()}</td>
+        <td class="wl-unit-cell-${cardId}" style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true" oninput="wlRecalcUnitsSum('${cardId}')">${(()=>{const wu=wlUnits(r);return wu%1===0?wu:wu.toFixed(2).replace(/0$/,'');})()}</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">${escHtml(r.room_name)}</td>
       </tr>`;
     }).join('')
@@ -845,7 +858,7 @@ function renderWorkload(){
         <td style="border:1.5px solid #444;padding:5px 8px;" contenteditable="true">&nbsp;</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
-        <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
+        <td class="wl-unit-cell-${cardId}" style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true" oninput="wlRecalcUnitsSum('${cardId}')">&nbsp;</td>
         <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;" contenteditable="true">&nbsp;</td>
       </tr>`;
 
