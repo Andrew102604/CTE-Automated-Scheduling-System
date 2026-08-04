@@ -7,6 +7,37 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/init');
 
+// Parses a time like "9:00 AM", "09:00AM", "9:30 PM" into minutes-since-midnight.
+function parseClock(t) {
+  const m = String(t).trim().match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+// Parses a timeslot label like "9:00 AM - 12:00 PM" into {start,end} minutes.
+function parseTimeRange(label) {
+  const parts = String(label).split('-');
+  if (parts.length < 2) return null;
+  const start = parseClock(parts[0]);
+  const end = parseClock(parts.slice(1).join('-'));
+  if (start == null || end == null) return null;
+  return { start, end };
+}
+// True if two timeslot labels genuinely overlap in actual clock time (e.g.
+// "9:00 AM - 12:00 PM" and "9:30 AM - 10:30 AM" overlap even though the
+// label text differs). Falls back to exact-label match if either label
+// can't be parsed, so unusual/custom labels still get *some* protection.
+function timeslotsOverlap(labelA, labelB) {
+  if (labelA === labelB) return true;
+  const a = parseTimeRange(labelA), b = parseTimeRange(labelB);
+  if (!a || !b) return false;
+  return a.start < b.end && b.start < a.end;
+}
+
 async function fullSchedule(row) {
   const [instR, subjR, roomR] = await Promise.all([
     db.execute({ sql: `SELECT * FROM instructors WHERE id = ?`, args: [row.instructor_id] }),
@@ -68,19 +99,20 @@ router.post('/schedules', async (req, res) => {
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject's major.` });
     }
 
-    const sameDayTimeR = await db.execute({
-      sql: `SELECT * FROM schedules WHERE day_key = ? AND timeslot_label = ?`,
-      args: [day_key, timeslot_label]
+    const sameDayR = await db.execute({
+      sql: `SELECT * FROM schedules WHERE day_key = ?`,
+      args: [day_key]
     });
+    const sameDayTimeR = { rows: sameDayR.rows.filter(s => timeslotsOverlap(s.timeslot_label, timeslot_label)) };
     for (const s of sameDayTimeR.rows) {
       if (s.room_id === room_id) {
-        return res.status(409).json({ error: `Room Conflict! ${room.name} is already used on ${day_key} at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Room Conflict! ${room.name} is already used on ${day_key} at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
       }
       if (s.instructor_id === instructor_id) {
-        return res.status(409).json({ error: `Instructor Conflict! ${instructor.name} is already scheduled on ${day_key} at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Instructor Conflict! ${instructor.name} is already scheduled on ${day_key} at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
       }
       if (s.section === section) {
-        return res.status(409).json({ error: `Section Conflict! ${section} already has a class on ${day_key} at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Section Conflict! ${section} already has a class on ${day_key} at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
       }
     }
 
@@ -136,17 +168,18 @@ router.put('/schedules/:id', async (req, res) => {
     if (!instructorMajorIds.includes(subject.major_id))
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject.` });
 
-    const sameDayTimeR = await db.execute({
-      sql: `SELECT * FROM schedules WHERE day_key = ? AND timeslot_label = ? AND id != ?`,
-      args: [day_key, timeslot_label, id]
+    const sameDayR = await db.execute({
+      sql: `SELECT * FROM schedules WHERE day_key = ? AND id != ?`,
+      args: [day_key, id]
     });
+    const sameDayTimeR = { rows: sameDayR.rows.filter(s => timeslotsOverlap(s.timeslot_label, timeslot_label)) };
     for (const s of sameDayTimeR.rows) {
       if (s.room_id === room_id)
-        return res.status(409).json({ error: `Room Conflict! ${room.name} is already used on ${day_key} at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Room Conflict! ${room.name} is already used on ${day_key} at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
       if (s.instructor_id === instructor_id)
-        return res.status(409).json({ error: `Instructor Conflict! ${instructor.name} is already scheduled at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Instructor Conflict! ${instructor.name} is already scheduled at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
       if (s.section === section)
-        return res.status(409).json({ error: `Section Conflict! ${section} already has a class at ${timeslot_label}.` });
+        return res.status(409).json({ error: `Section Conflict! ${section} already has a class at ${s.timeslot_label} (overlaps ${timeslot_label}).` });
     }
 
     await db.execute({
