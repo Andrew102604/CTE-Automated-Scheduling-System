@@ -107,7 +107,8 @@ async function init() {
       major_id   INTEGER NOT NULL REFERENCES majors(id) ON DELETE CASCADE,
       year_level INTEGER NOT NULL DEFAULT 0,
       program    TEXT NOT NULL DEFAULT 'Both',
-      is_lab     INTEGER NOT NULL DEFAULT 0
+      is_lab     INTEGER NOT NULL DEFAULT 0,
+      semester   TEXT NOT NULL DEFAULT ''
     )`,
     `CREATE TABLE IF NOT EXISTS schedules (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,6 +130,11 @@ async function init() {
 
   // Migrations for DBs created before certain columns existed.
   try { await db.execute(`ALTER TABLE subjects ADD COLUMN is_lab INTEGER NOT NULL DEFAULT 0`); } catch (e) { /* already exists */ }
+  // Semester (1st Semester / 2nd Semester) a subject is normally offered in,
+  // so the Assign Schedule course dropdown can filter to the CURRENT
+  // semester and stop mixing up which courses belong to which term. Blank
+  // = not yet tagged, shows regardless of semester (until an admin sets it).
+  try { await db.execute(`ALTER TABLE subjects ADD COLUMN semester TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE majors ADD COLUMN type TEXT NOT NULL DEFAULT 'Major'`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }

@@ -745,7 +745,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- SUBJECTS -->
             <div class="mgr-section" id="mgs-subjects">
               <div class="mgr-section-title">Courses</div>
-              <div class="mgr-section-sub">Add all subjects/courses. Set <b>Program</b> to filter by BEED or BSED — when assigning schedules, the system auto-filters based on the section name (e.g. <b>BEED 1A</b> → BEED + 1st year subjects only, <b>BSED 2B</b> → BSED + 2nd year subjects only). Use <b>All Programs</b> for GE subjects shared by both.</div>
+              <div class="mgr-section-sub">Add all subjects/courses. Set <b>Program</b> to filter by BEED or BSED — when assigning schedules, the system auto-filters based on the section name (e.g. <b>BEED 1A</b> → BEED + 1st year subjects only, <b>BSED 2B</b> → BSED + 2nd year subjects only). Use <b>All Programs</b> for GE subjects shared by both. Set <b>Semester</b> so the course only shows up when that semester is the current one in Academic Year — leave it <b>Any Semester</b> if unsure.</div>
               <div class="mgr-list-wrap" id="subj-list"></div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Add Course</div>
@@ -768,6 +768,11 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                     <option value="BEED">BEED only</option>
                     <option value="BSED">BSED only</option>
                   </select>
+                  <select id="ns-semester" class="mgr-input" style="max-width:140px;flex:none;">
+                    <option value="">Any Semester</option>
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                  </select>
                 </div>
                 <div class="mgr-add-row" style="align-items:center;gap:10px;">
                   <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
@@ -777,7 +782,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                   <span style="font-size:11px;color:var(--gray3);">(Lab: 2 units = 4.5 WL units; 1 unit = 2.25 WL units)</span>
                   <button class="mgr-btn" onclick="addSubject()" style="margin-left:auto;">+ Add</button>
                 </div>
-                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter.</div>
+                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter. <b>Any Semester</b> = shows regardless of the current semester setting.</div>
                 <div class="inline-err" id="ns-err"></div>
               </div>
             </div>

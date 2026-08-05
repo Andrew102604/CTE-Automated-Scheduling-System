@@ -539,6 +539,7 @@ function filterSubjectsBySection(){
       const parts=[];
       if(program) parts.push(program);
       if(yearLevel>0) parts.push(YR_NAMES[yearLevel]);
+      if(STATE.settings?.semester) parts.push(STATE.settings.semester);
       hintEl.textContent='Filtered: '+(parts.length?parts.join(' + ')+' subjects':'all subjects');
       hintEl.style.display='block';
     }else{
@@ -549,11 +550,14 @@ function filterSubjectsBySection(){
   const matching = STATE.subjects.filter(s=>{
     if(program&&s.program&&s.program!=='Both'&&s.program!==program)return false;
     if(yearLevel>0&&s.year_level>0&&s.year_level!==yearLevel)return false;
+    // Untagged subjects (semester not yet set) always show, so nothing
+    // existing quietly disappears until an admin tags it.
+    if(s.semester&&STATE.settings?.semester&&s.semester!==STATE.settings.semester)return false;
     return true;
   });
 
   subjSel.innerHTML = matching.length
-    ? matching.map(s=>`<option value="${s.id}">${escHtml(s.code)} - ${escHtml(s.descr)} (${s.units} units${s.is_lab?' LAB':''})${s.program&&s.program!=='Both'?' ['+s.program+']':''}${s.year_level>0?' ['+YR[s.year_level]+']':''}</option>`).join('')
+    ? matching.map(s=>`<option value="${s.id}">${escHtml(s.code)} - ${escHtml(s.descr)} (${s.units} units${s.is_lab?' LAB':''})${s.program&&s.program!=='Both'?' ['+s.program+']':''}${s.year_level>0?' ['+YR[s.year_level]+']':''}${s.semester?' ['+s.semester+']':''}</option>`).join('')
     : '<option value="">-- no subjects match this section --</option>';
 
   filterInstructorsBySubject();
@@ -1424,10 +1428,11 @@ function renderManageData(){
           ?`<span style="background:${YR_COLORS[s.year_level]};color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:700;">${YR_LABELS[s.year_level]}</span>`
           :`<span style="background:#90a4ae;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;">All Yrs</span>`;
         const prog=`<span style="background:${PROG_COLORS[s.program]||'#546e7a'};color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:700;">${s.program==='Both'?'GE/Both':s.program}</span>`;
+        const sem=s.semester?`<span style="background:${s.semester==='1st Semester'?'#6a1b9a':'#00838f'};color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:700;">${s.semester}</span>`:'';
         const majorOpts=STATE.majors.filter(m=>(m.type||'Major')==='Major').map(m=>`<option value="${m.id}"${m.id===s.major_id?' selected':''}>${escHtml(m.name)}</option>`).join('');
         return `
           <div class="list-item">
-            <div><div class="lname">${escHtml(s.code)} – ${escHtml(s.descr)} ${s.is_lab?'<span style=\"background:#e53935;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LAB</span>':'<span style=\"background:#1565c0;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;\">LEC</span>'}${prog}${yr}</div><div class="lsub">${escHtml(s.major_name||'—')} | ${s.units} units${s.is_lab?' — WL: '+(s.units*2.25).toFixed(2)+' units':''}</div></div>
+            <div><div class="lname">${escHtml(s.code)} – ${escHtml(s.descr)} ${s.is_lab?'<span style=\"background:#e53935;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LAB</span>':'<span style=\"background:#1565c0;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;\">LEC</span>'}${prog}${yr}${sem}</div><div class="lsub">${escHtml(s.major_name||'—')} | ${s.units} units${s.is_lab?' — WL: '+(s.units*2.25).toFixed(2)+' units':''}</div></div>
             <div style="display:flex;gap:3px;">
               <button class="list-edit-btn" onclick="toggleEdit('subj',${s.id})">✏</button>
               <button onclick="deleteSubject(${s.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;">🗑</button>
@@ -1452,6 +1457,13 @@ function renderManageData(){
                 <option value="Both"${s.program==='Both'?' selected':''}>All Programs</option>
                 <option value="BEED"${s.program==='BEED'?' selected':''}>BEED only</option>
                 <option value="BSED"${s.program==='BSED'?' selected':''}>BSED only</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <select id="subj-sem-${s.id}" style="flex:1;">
+                <option value=""${!s.semester?' selected':''}>Any Semester</option>
+                <option value="1st Semester"${s.semester==='1st Semester'?' selected':''}>1st Semester</option>
+                <option value="2nd Semester"${s.semester==='2nd Semester'?' selected':''}>2nd Semester</option>
               </select>
             </div>
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" id="subj-islab-${s.id}" ${s.is_lab?'checked':''} style="width:14px;height:14px;accent-color:var(--navy);"> Laboratory subject</label>
@@ -1618,14 +1630,16 @@ async function addSubject(){
   const major_id=parseInt(document.getElementById('ns-major').value);
   const year_level=parseInt(document.getElementById('ns-year').value)||0;
   const program=document.getElementById('ns-program').value||'Both';
+  const semester=document.getElementById('ns-semester').value||'';
   const is_lab=document.getElementById('ns-islab').checked?1:0;
   const err=document.getElementById('ns-err');err.style.display='none';
   if(!code||!descr||!units||!major_id){err.textContent='Fill all subject fields.';err.style.display='block';return;}
   try{
-    await apiPost('/subjects',{code,descr,units,major_id,year_level,program,is_lab});
+    await apiPost('/subjects',{code,descr,units,major_id,year_level,program,semester,is_lab});
     ['ns-code','ns-desc','ns-units'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ns-year').value='0';
     document.getElementById('ns-program').value='Both';
+    document.getElementById('ns-semester').value='';
     document.getElementById('ns-islab').checked=false;
     await loadState();renderAll();
   }catch(e){err.textContent=e.message;err.style.display='block';}
@@ -1906,11 +1920,12 @@ async function saveEditSubject(id){
   const major_id=parseInt(document.getElementById(`subj-major-${id}`).value);
   const yr      =parseInt(document.getElementById(`subj-yr-${id}`).value)||0;
   const prog    =document.getElementById(`subj-prog-${id}`).value;
+  const sem     =document.getElementById(`subj-sem-${id}`).value||'';
   const is_lab  =document.getElementById(`subj-islab-${id}`)?.checked?1:0;
   const err     =document.getElementById(`subj-err-${id}`);
   err.style.display='none';
   if(!code||!descr||!units||!major_id){err.textContent='Fill all fields.';err.style.display='block';return;}
-  try{await apiPut(`/subjects/${id}`,{code,descr,units,major_id,year_level:yr,program:prog,is_lab});await loadState();renderAll();}
+  try{await apiPut(`/subjects/${id}`,{code,descr,units,major_id,year_level:yr,program:prog,semester:sem,is_lab});await loadState();renderAll();}
   catch(e){err.textContent=e.message;err.style.display='block';}
 }
 
