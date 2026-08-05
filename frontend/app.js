@@ -411,26 +411,27 @@ function printTimetableOnly(){document.body.classList.add('printing-timetable');
 function printArchiveTimetableOnly(){document.body.classList.add('printing-archive-timetable');window.print();}
 function printArchiveSection(which){document.body.classList.add('printing-archive-'+which);window.print();}
 
-// Shrinks each day-cluster's font-size (via the --tt-font CSS variable) just
-// enough that its WHOLE table — header, every timeslot row, lunch row —
-// fits within one printed landscape page, so no day cluster ever spills
-// onto a second page or leaves a blank page above it. Runs right before
-// print, since that's the only point the real rendered height is known.
+// Shrinks each day-cluster's table (via the `zoom` CSS property, which
+// actually reflows the layout at the smaller size — unlike
+// `transform:scale()`, which only shrinks the painted pixels and leaves the
+// original layout box in place, so content still gets cut off) just enough
+// that its WHOLE table — header, every timeslot row, lunch row — fits
+// within one printed landscape page. Runs right before print, since that's
+// the only point the real rendered height is known.
 function fitTimetablesToOnePage(){
   const MAX_H=750; // ~200mm usable height at 5mm margins, A4 landscape, 96dpi
-  const BASE_FONT=6.5;
   document.querySelectorAll('.grid-wrap').forEach(wrap=>{
-    wrap.style.setProperty('--tt-font',BASE_FONT+'px');
-    let naturalH=wrap.scrollHeight;
+    wrap.style.zoom='';
+    const naturalH=wrap.scrollHeight;
     if(naturalH>MAX_H){
-      let font=BASE_FONT*(MAX_H/naturalH);
-      wrap.style.setProperty('--tt-font',font.toFixed(2)+'px');
-      // One correction pass: borders/other non-scaling bits keep the
-      // relationship from being perfectly linear, so remeasure once more.
+      let factor=MAX_H/naturalH;
+      wrap.style.zoom=factor.toFixed(3);
+      // One correction pass: zooming can shift a table's own auto-layout
+      // slightly, so remeasure once and tighten if it's still too tall.
       const correctedH=wrap.scrollHeight;
       if(correctedH>MAX_H){
-        font=font*(MAX_H/correctedH);
-        wrap.style.setProperty('--tt-font',font.toFixed(2)+'px');
+        factor=factor*(MAX_H/correctedH);
+        wrap.style.zoom=factor.toFixed(3);
       }
     }
   });
@@ -438,7 +439,7 @@ function fitTimetablesToOnePage(){
 window.addEventListener('beforeprint',fitTimetablesToOnePage);
 window.addEventListener('afterprint',()=>{
   document.body.classList.remove('printing-timetable','printing-archive-timetable','printing-archive-cp','printing-archive-wl');
-  document.querySelectorAll('.grid-wrap').forEach(wrap=>wrap.style.removeProperty('--tt-font'));
+  document.querySelectorAll('.grid-wrap').forEach(wrap=>wrap.style.zoom='');
 });
 
 // ============================================================
