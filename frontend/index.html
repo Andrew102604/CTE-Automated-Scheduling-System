@@ -337,7 +337,7 @@ table.sched-grid tr.lunch-row td{background:#fff3cd;color:#856404;font-weight:70
    PRINT
    ============================================================ */
 @page{size:A4 portrait;margin:12mm;}
-@page timetable-page{size:A4 landscape;margin:8mm;}
+@page timetable-page{size:A4 landscape;margin:5mm;}
 body.printing-timetable{page:timetable-page;}
 body.printing-timetable #topbar,
 body.printing-timetable #sidebar,
@@ -373,13 +373,15 @@ body.printing-timetable #overlay{display:none!important;}
   .doc-header{margin-bottom:6px!important;}
   .doc-header img{height:45px!important;}
   body.printing-timetable #panel-0{display:block!important;}
-  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;page-break-inside:avoid;}
-  .grid-wrap:last-child{page-break-after:auto;}
-  .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;}
-  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:7.5px;page-break-inside:avoid;}
-  table.sched-grid th,table.sched-grid td{padding:2px;overflow:hidden;word-break:break-word;}
-  table.sched-grid td.time-col{width:auto;font-size:7px;}
-  tr,td,th{page-break-inside:avoid;}
+  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;}
+  .grid-wrap:last-child{page-break-after:auto;break-after:auto;}
+  .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;padding:3px 8px!important;font-size:10px!important;}
+  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:6.5px;page-break-inside:avoid;break-inside:avoid;}
+  table.sched-grid th,table.sched-grid td{padding:1px 2px!important;overflow:hidden;word-break:break-word;line-height:1.05!important;}
+  table.sched-grid td.time-col{width:auto;font-size:6px;}
+  table.sched-grid td.cell-used{line-height:1.05!important;}
+  table.sched-grid tr.lunch-row td{padding:1px!important;font-size:7px!important;}
+  tr,td,th{page-break-inside:avoid;break-inside:avoid;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   .sign-line{border-bottom:1px solid #000!important;}
   /* Hide dropdown arrows and style selects as plain text on print */
@@ -519,16 +521,12 @@ body.printing-timetable #overlay{display:none!important;}
   </div>
 
   <div id="main">
-    <div id="term-viewer-bar" class="section-selector no-print" style="margin:14px 18px 0;">
-      <label style="font-weight:700;font-size:13px;">Viewing:</label>
-      <select id="term-viewer-sel" onchange="onTermViewerChange()"></select>
-      <span id="term-viewer-banner" style="display:none;background:#fff3cd;color:#856404;border:1px solid #ffe08a;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;">📁 Archived term — read-only. Timetable editing, Save &amp; Plot, and Reset are disabled. Printing still works.</span>
-    </div>
     <div id="tabs">
       <button class="tab-btn active" onclick="switchTab(0)">Timetable</button>
       <button class="tab-btn" onclick="switchTab(1)">Class Program</button>
       <button class="tab-btn" onclick="switchTab(2)">Faculty Workload</button>
       <button class="tab-btn" onclick="switchTab(3)">Manage Data</button>
+      <button class="tab-btn" onclick="switchTab(4)">Archive</button>
     </div>
     <div id="panels">
       <!-- PANEL 0: TIMETABLE -->
@@ -818,6 +816,36 @@ body.printing-timetable #overlay{display:none!important;}
 
           </div><!-- end mgr-content -->
         </div><!-- end mgr-layout -->
+      </div>
+
+      <!-- PANEL 4: ARCHIVE -->
+      <div class="panel" id="panel-4">
+        <div id="archive-term-list"></div>
+        <div id="archive-viewer" style="display:none;margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
+          <h3 id="archive-viewer-title" style="margin:0 0 14px;color:var(--navy);"></h3>
+
+          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Timetable</div>
+          <div class="section-selector no-print">
+            <button class="btn-print" onclick="window.print()">🖨️ Print Timetable</button>
+          </div>
+          <div id="archive-timetable-grid"></div>
+
+          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Class Program</div>
+          <div class="section-selector no-print">
+            <label style="font-weight:700;font-size:13px;">Section:</label>
+            <select id="arc-cp-section-sel" onchange="renderArchiveClassProgram()"></select>
+            <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+          </div>
+          <div id="archive-class-program-doc"></div>
+
+          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Faculty Workload</div>
+          <div class="workload-select no-print">
+            <label style="font-weight:700;font-size:13px;">Faculty:</label>
+            <select id="arc-wl-inst-sel" onchange="renderArchiveWorkload()"></select>
+            <button class="btn-print" onclick="window.print()">🖨️ Print Workload</button>
+          </div>
+          <div id="archive-workload-doc"></div>
+        </div>
       </div>
     </div>
   </div>

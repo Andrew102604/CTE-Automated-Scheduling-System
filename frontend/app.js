@@ -30,11 +30,14 @@ let STATE = {
   instructors:[], subjects:[], schedules:[],
   settings:{academic_year:'2025-2026', semester:'1st Semester'},
   // Archive: `terms` lists every academic_year/semester that has saved
-  // schedules (plus the current one). `currentTerm` mirrors Manage Data >
-  // Academic Year. `viewingTerm` is null while looking at the live/current
-  // term; set to {academic_year,semester} when browsing an archived one —
-  // schedules become read-only and Save/Reset are disabled in that mode.
-  terms:[], currentTerm:{academic_year:'2025-2026', semester:'1st Semester'}, viewingTerm:null
+  // schedules (plus the current one), used to build the Archive tab's term
+  // list. `currentTerm` mirrors Manage Data > Academic Year. `archiveTerm` /
+  // `archiveSchedules` hold whichever past term is currently opened in the
+  // Archive tab — completely separate from the live `schedules` above, so
+  // browsing an old term never affects the live Timetable/Class
+  // Program/Faculty Workload tabs (which always show the CURRENT term).
+  terms:[], currentTerm:{academic_year:'2025-2026', semester:'1st Semester'},
+  archiveTerm:null, archiveSchedules:[]
 };
 
 // ============================================================
@@ -349,65 +352,20 @@ function fetchSchedulesFor(term){
 
 async function loadState(){instColorClear&&instColorClear();
   try{
-    const [majors,rooms,dayClusters,timeslots,instructors,subjects,settings,termsResp]=await Promise.all([
+    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,termsResp]=await Promise.all([
       apiGet('/majors'),apiGet('/rooms'),apiGet('/day-clusters'),apiGet('/timeslots'),
-      apiGet('/instructors'),apiGet('/subjects'),apiGet('/settings'),apiGet('/academic-terms')
+      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules'),apiGet('/settings'),apiGet('/academic-terms')
     ]);
-    const viewingTerm=STATE.viewingTerm; // preserve archive selection across incidental reloads
-    const schedules=await fetchSchedulesFor(viewingTerm);
-    STATE={majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,
-           terms:termsResp.terms,currentTerm:termsResp.current,viewingTerm};
+    STATE={...STATE,majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,
+           terms:termsResp.terms,currentTerm:termsResp.current};
     const acYearEl=document.getElementById('ac-year'), acSemEl=document.getElementById('ac-semester');
     if(acYearEl)acYearEl.value=settings.academic_year||'2025-2026';
     if(acSemEl)acSemEl.value=settings.semester||'1st Semester';
-    populateTermViewerSelector();
-    updateArchiveUI();
     setConn(true);
   }catch(e){
     setConn(false);
     if(!e.message.includes('Session'))showMsg(e.message,false);
   }
-}
-
-// ---- Archive: Viewing Term selector (Timetable / Class Program / Faculty Workload) ----
-function populateTermViewerSelector(){
-  const sel=document.getElementById('term-viewer-sel');
-  if(!sel)return;
-  sel.innerHTML=STATE.terms.map(t=>{
-    const isCurrent=t.academic_year===STATE.currentTerm.academic_year&&t.semester===STATE.currentTerm.semester;
-    const val=`${t.academic_year}||${t.semester}`;
-    return `<option value="${escAttr(val)}">${escHtml(t.semester)}, AY ${escHtml(t.academic_year)}${isCurrent?' (Current)':''}</option>`;
-  }).join('');
-  const active=STATE.viewingTerm||STATE.currentTerm;
-  sel.value=`${active.academic_year}||${active.semester}`;
-}
-
-async function onTermViewerChange(){
-  const sel=document.getElementById('term-viewer-sel');
-  const [academic_year,semester]=sel.value.split('||');
-  const isCurrent=academic_year===STATE.currentTerm.academic_year&&semester===STATE.currentTerm.semester;
-  STATE.viewingTerm=isCurrent?null:{academic_year,semester};
-  try{
-    STATE.schedules=await fetchSchedulesFor(STATE.viewingTerm);
-  }catch(e){showMsg(e.message,false);return;}
-  updateArchiveUI();
-  renderAll();
-}
-
-// Toggles the read-only banner and disables the write actions (Save & Plot,
-// Reset All Schedules, editing a Timetable cell) while an archived term is
-// being viewed. Printing stays enabled either way.
-function updateArchiveUI(){
-  const archived=!!STATE.viewingTerm;
-  const banner=document.getElementById('term-viewer-banner');
-  if(banner)banner.style.display=archived?'inline-block':'none';
-  const addBtn=document.getElementById('btn-add'), resetBtn=document.getElementById('btn-reset');
-  [addBtn,resetBtn].forEach(b=>{
-    if(!b)return;
-    b.disabled=archived;
-    b.style.opacity=archived?'0.5':'';
-    b.style.cursor=archived?'not-allowed':'';
-  });
 }
 
 // Saves the global Academic Year + Semester (Manage Data section) so it can
@@ -421,7 +379,6 @@ async function saveAcademicSettings(){
   try{
     const updated=await apiPut('/settings',{academic_year,semester});
     STATE.settings=updated;
-    STATE.viewingTerm=null; // follow the newly-current term
     await loadState();renderAll();
     ok.style.display='block';
     setTimeout(()=>ok.style.display='none',2500);
@@ -573,7 +530,6 @@ function filterSubjectsByInstructor(){ filterInstructorsBySubject(); }
 // ADD / RESET SCHEDULE
 // ============================================================
 async function addSchedule(){
-  if(STATE.viewingTerm){showMsg('You are viewing an archived term (read-only). Switch to Current to add schedules.',false);return;}
   const instructor_id =parseInt(document.getElementById('f-instructor').value);
   const subject_id    =parseInt(document.getElementById('f-subject').value);
   const section       =document.getElementById('f-section').value.trim();
@@ -601,7 +557,6 @@ function showMsg(txt,ok){
 }
 
 async function resetSchedules(){
-  if(STATE.viewingTerm){showMsg('You are viewing an archived term (read-only). Switch to Current to reset schedules.',false);return;}
   if(!confirm(`Reset ALL schedules for ${STATE.settings?.semester||'the current semester'}, AY ${STATE.settings?.academic_year||''}? Other semesters' saved schedules are not affected. This cannot be undone.`))return;
   try{await apiDelete('/schedules');await loadState();renderAll();}
   catch(e){showMsg(e.message,false);}
@@ -610,15 +565,18 @@ async function resetSchedules(){
 // ============================================================
 // TIMETABLE
 // ============================================================
-function renderTimetable(){
-  const c=document.getElementById('timetable-grid');
-  if(!STATE.schedules.length){
-    c.innerHTML=`<div class="no-data">No schedules yet.<br>Use the sidebar to add one${STATE.instructors.length?'':' — add data in <a class="goto-manage" onclick="switchTab(3)">Manage Data</a> first'}.</div>`;
+function renderTimetable(opts={}){
+  const schedules=opts.schedules||STATE.schedules;
+  const c=document.getElementById(opts.containerId||'timetable-grid');
+  if(!schedules.length){
+    c.innerHTML=opts.readOnly
+      ?'<div class="no-data">No schedules for this term.</div>'
+      :`<div class="no-data">No schedules yet.<br>Use the sidebar to add one${STATE.instructors.length?'':' — add data in <a class="goto-manage" onclick="switchTab(3)">Manage Data</a> first'}.</div>`;
     return;
   }
   let html='';
   for(const dayObj of STATE.dayClusters){
-    const ds=STATE.schedules.filter(s=>s.day_key===dayObj.key);
+    const ds=schedules.filter(s=>s.day_key===dayObj.key);
     if(!ds.length)continue;
     const dayRoomIds=[...new Set(ds.map(s=>s.room_id))];
     const dayRooms=STATE.rooms.filter(r=>dayRoomIds.includes(r.id));
@@ -649,8 +607,8 @@ function renderTimetable(){
           const m=ds.find(s=>s.timeslot_label===slot.label&&s.room_id===rm.id&&s.section===sec);
           if(m){
             const inst=getInst(m.instructor_id);
-            const archived=!!STATE.viewingTerm;
-            html+=`<td class="cell-used" style="background:${instColor(m.instructor_id)};${archived?'':'cursor:pointer;'}" ${archived?'':`onclick="openEditModal(${m.id})"`} title="${archived?'Archived term — read-only':'Click to edit'}">
+            const readOnly=!!opts.readOnly;
+            html+=`<td class="cell-used" style="background:${instColor(m.instructor_id)};${readOnly?'':'cursor:pointer;'}" ${readOnly?'':`onclick="openEditModal(${m.id})"`} title="${readOnly?'Archived term — read-only':'Click to edit'}">
               <strong style="font-size:10px;">${escHtml(m.code)}</strong><br>
               <span style="font-size:9px;color:#777;">${escHtml(m.section)}</span><br>
               <span style="font-size:9px;color:#555;">${escHtml(lastName(inst))}</span>
@@ -669,16 +627,19 @@ function renderTimetable(){
 // ============================================================
 // CLASS PROGRAM
 // ============================================================
-function populateClassProgramSelector(){
-  const secs=[...new Set(STATE.schedules.map(s=>s.section))].sort();
-  const sel=document.getElementById('cp-section-sel');
+function populateClassProgramSelector(opts={}){
+  const schedules=opts.schedules||STATE.schedules;
+  const secs=[...new Set(schedules.map(s=>s.section))].sort();
+  const sel=document.getElementById(opts.selId||'cp-section-sel');
   sel.innerHTML=secs.length?secs.map(s=>`<option>${escHtml(s)}</option>`).join(''):'<option value="">-- no schedules yet --</option>';
 }
 
-function renderClassProgram(){
-  const section=document.getElementById('cp-section-sel').value;
-  const rows=STATE.schedules.filter(s=>s.section===section);
-  const c=document.getElementById('class-program-doc');
+function renderClassProgram(opts={}){
+  const schedules=opts.schedules||STATE.schedules;
+  const term=opts.term||STATE.settings;
+  const section=document.getElementById(opts.selId||'cp-section-sel').value;
+  const rows=schedules.filter(s=>s.section===section);
+  const c=document.getElementById(opts.containerId||'class-program-doc');
   if(!rows.length){c.innerHTML='<div class="no-data">No schedule for this section.</div>';return;}
   const total=rows.reduce((a,r)=>a+r.units,0);
 
@@ -719,7 +680,7 @@ function renderClassProgram(){
       <div style="font-size:11px;">Tagbina Campus, Surigao del Sur</div>
       <div style="font-size:14px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:1px;">CLASS PROGRAM</div>
       <div style="font-size:11px;margin-top:4px;">
-        ${escHtml(STATE.settings?.semester||'1st Semester')}, Academic Year:&nbsp;<b>${escHtml(STATE.settings?.academic_year||'2025-2026')}</b>
+        ${escHtml(term?.semester||'1st Semester')}, Academic Year:&nbsp;<b>${escHtml(term?.academic_year||'2025-2026')}</b>
       </div>
       <div style="font-size:11px;margin-top:3px;">Program, Year &amp; Section: <u>&nbsp;<b>${escHtml(section)}</b>&nbsp;</u></div>
     </div>
@@ -804,19 +765,21 @@ function wlUnits(r){
   return r.units;
 }
 
-function populateWorkloadSelector(){
-  const activeIds=new Set(STATE.schedules.map(s=>s.instructor_id));
+function populateWorkloadSelector(opts={}){
+  const schedules=opts.schedules||STATE.schedules;
+  const activeIds=new Set(schedules.map(s=>s.instructor_id));
   const active=STATE.instructors.filter(i=>activeIds.has(i.id));
-  const sel=document.getElementById('wl-inst-sel');
+  const sel=document.getElementById(opts.selId||'wl-inst-sel');
   sel.innerHTML=active.length?active.map(i=>`<option value="${i.id}">${escHtml(i.name)}</option>`).join(''):'<option value="">-- no schedules yet --</option>';
 }
 
-function renderWorkload(){
-  const instId=parseInt(document.getElementById('wl-inst-sel').value);
+function renderWorkload(opts={}){
+  const instId=opts.instId??parseInt(document.getElementById(opts.selId||'wl-inst-sel').value);
   const inst=getInst(instId);
-  const c=document.getElementById('workload-doc');
+  const c=document.getElementById(opts.containerId||'workload-doc');
   if(!inst){c.innerHTML='<div class="no-data">Select an instructor.</div>';return;}
-  const rows=STATE.schedules.filter(s=>s.instructor_id===instId);
+  const rows=(opts.schedules||STATE.schedules).filter(s=>s.instructor_id===instId);
+  const term=opts.term||STATE.settings;
   if(!rows.length){c.innerHTML='<div class="no-data">No schedules assigned.</div>';return;}
 
   // Sort by day cluster order then timeslot sort_order (chronological)
@@ -933,7 +896,7 @@ function renderWorkload(){
     const noPrep=label==='Regular'?totalPrepCount:'';
     const majOnlyStr=inst.majors.filter(m=>(m.type||'Major')==='Major').map(m=>m.name).join(', ')||'—';
     const minorStr=inst.majors.filter(m=>m.type==='Minor').map(m=>m.name).join(', ')||'';
-    const cardId='wl-card-'+(wlCardIdx++);
+    const cardId=(opts.cardPrefix||'wl-card-')+(wlCardIdx++);
 
     const buildTable=arr=>arr.map(r=>{
       const dc=STATE.dayClusters.find(d=>d.key===r.day_key);
@@ -1015,7 +978,7 @@ function renderWorkload(){
         <div style="font-size:11px;">Tagbina Campus, Surigao del Sur</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:1px;">FACULTY WORKLOAD</div>
         <div style="font-size:11px;margin-top:4px;">
-          ${escHtml(STATE.settings?.semester||'2nd Semester')}, AY:&nbsp;<b>${escHtml(STATE.settings?.academic_year||'2025-2026')}</b>
+          ${escHtml(term?.semester||'2nd Semester')}, AY:&nbsp;<b>${escHtml(term?.academic_year||'2025-2026')}</b>
         </div>
       </div>
 
@@ -1138,6 +1101,60 @@ function renderWorkload(){
     block('Emergency',emergency,emergency.reduce((a,r)=>a+wlUnits(r),0))+
     block('Praise',praise,praise.reduce((a,r)=>a+wlUnits(r),0),desig2Units,desig2Name)+
     block('Service Credit',[],0,desig3Units,desig3Name);
+}
+
+// ============================================================
+// ARCHIVE — browse/print past semesters without touching the live term
+// ============================================================
+// Lists every past academic_year/semester that has saved schedules
+// (excludes the current one, which already lives in the normal tabs).
+// Clicking a row loads that term's schedules into STATE.archiveSchedules
+// and renders its own Timetable / Class Program / Faculty Workload below
+// the list — entirely separate from STATE.schedules, so the live tabs and
+// their edit/add/reset actions are never affected by browsing an old term.
+function renderArchiveList(){
+  const c=document.getElementById('archive-term-list');
+  const past=STATE.terms.filter(t=>!(t.academic_year===STATE.currentTerm.academic_year&&t.semester===STATE.currentTerm.semester));
+  if(!past.length){
+    c.innerHTML='<div class="no-data">No archived terms yet — once you switch to a new semester/academic year in Manage Data, the previous one will show up here.</div>';
+    document.getElementById('archive-viewer').style.display='none';
+    return;
+  }
+  c.innerHTML=past.map(t=>{
+    const isOpen=STATE.archiveTerm&&STATE.archiveTerm.academic_year===t.academic_year&&STATE.archiveTerm.semester===t.semester;
+    return `<div class="list-item" style="cursor:pointer;${isOpen?'border:1.5px solid var(--navy);':''}" onclick="openArchiveTerm('${escAttr(t.academic_year)}','${escAttr(t.semester)}')">
+      <div><div class="lname">${escHtml(t.semester)}, AY ${escHtml(t.academic_year)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+async function openArchiveTerm(academic_year,semester){
+  try{
+    STATE.archiveSchedules=await fetchSchedulesFor({academic_year,semester});
+  }catch(e){showMsg(e.message,false);return;}
+  STATE.archiveTerm={academic_year,semester};
+  renderArchiveList();
+  document.getElementById('archive-viewer').style.display='block';
+  document.getElementById('archive-viewer-title').textContent=`${semester}, AY ${academic_year}`;
+  renderArchiveTimetable();
+  populateArchiveClassProgramSelector();renderArchiveClassProgram();
+  populateArchiveWorkloadSelector();renderArchiveWorkload();
+}
+
+function renderArchiveTimetable(){
+  renderTimetable({schedules:STATE.archiveSchedules,containerId:'archive-timetable-grid',readOnly:true});
+}
+function populateArchiveClassProgramSelector(){
+  populateClassProgramSelector({schedules:STATE.archiveSchedules,selId:'arc-cp-section-sel'});
+}
+function renderArchiveClassProgram(){
+  renderClassProgram({schedules:STATE.archiveSchedules,selId:'arc-cp-section-sel',containerId:'archive-class-program-doc',term:STATE.archiveTerm});
+}
+function populateArchiveWorkloadSelector(){
+  populateWorkloadSelector({schedules:STATE.archiveSchedules,selId:'arc-wl-inst-sel'});
+}
+function renderArchiveWorkload(){
+  renderWorkload({schedules:STATE.archiveSchedules,selId:'arc-wl-inst-sel',containerId:'archive-workload-doc',term:STATE.archiveTerm,cardPrefix:'arc-wl-card-'});
 }
 
 // ============================================================
@@ -1592,6 +1609,7 @@ function switchTab(n){
   if(n===1)renderClassProgram();
   if(n===2)renderWorkload();
   if(n===3)renderManageData();
+  if(n===4)renderArchiveList();
 }
 
 function renderAll(){
