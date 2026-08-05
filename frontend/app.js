@@ -800,11 +800,7 @@ function renderWorkload(){
     pool=pool.filter(x=>!pickedSet.has(x));
     return picked.map(x=>x.row);
   };
-  // Policy: 4 or more total preparations (distinct subjects) caps the
-  // Regular load at 15 units instead of the usual 18; 3 or fewer keeps 18.
-  const totalPreps=new Set(rows.map(r=>r.code)).size;
-  const regularCap=totalPreps>=4?15:18;
-  const regular=take(regularCap-(desigUnits+specialUnits));
+  const regular=take(LOAD_MAX.regular-(desigUnits+specialUnits));
   const overload=take(LOAD_MAX.overload);
   const emergency=take(LOAD_MAX.emergency);
   const praise=pool.map(x=>x.row); // whatever's left, no cap - last resort
