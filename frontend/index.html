@@ -373,14 +373,14 @@ body.printing-timetable #overlay{display:none!important;}
   .doc-header{margin-bottom:6px!important;}
   .doc-header img{height:45px!important;}
   body.printing-timetable #panel-0{display:block!important;}
-  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;}
+  .grid-wrap{overflow:visible!important;margin-bottom:0!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;--tt-font:6.5px;}
   .grid-wrap:last-child{page-break-after:auto;break-after:auto;}
-  .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;padding:3px 8px!important;font-size:10px!important;}
-  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:6.5px;page-break-inside:avoid;break-inside:avoid;}
-  table.sched-grid th,table.sched-grid td{padding:1px 2px!important;overflow:hidden;word-break:break-word;line-height:1.05!important;}
-  table.sched-grid td.time-col{width:auto;font-size:6px;}
+  .grid-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:0;padding:0.3em 0.6em!important;font-size:calc(var(--tt-font) * 1.5)!important;}
+  table.sched-grid{width:100%!important;min-width:0!important;table-layout:fixed;font-size:var(--tt-font);page-break-inside:avoid;break-inside:avoid;}
+  table.sched-grid th,table.sched-grid td{padding:0.15em 0.3em!important;overflow:hidden;word-break:break-word;line-height:1.05!important;}
+  table.sched-grid td.time-col{width:auto;font-size:calc(var(--tt-font) * 0.9);}
   table.sched-grid td.cell-used{line-height:1.05!important;}
-  table.sched-grid tr.lunch-row td{padding:1px!important;font-size:7px!important;}
+  table.sched-grid tr.lunch-row td{padding:0.15em!important;font-size:calc(var(--tt-font) * 1.1)!important;}
   tr,td,th{page-break-inside:avoid;break-inside:avoid;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   .sign-line{border-bottom:1px solid #000!important;}
@@ -393,6 +393,16 @@ body.printing-timetable #overlay{display:none!important;}
   .cp-doc table{font-size:10px!important;}
   .cp-doc thead tr{background:#d0d8e8!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
 }
+/* Archive tab: isolate whichever of its 3 sections (Timetable / Class
+   Program / Faculty Workload) was printed, hiding the other two plus the
+   term list — same idea as body.printing-timetable does for the live tabs. */
+body.printing-archive-timetable{page:timetable-page;}
+body.printing-archive-timetable #archive-cp-section,
+body.printing-archive-timetable #archive-wl-section{display:none!important;}
+body.printing-archive-cp #archive-tt-section,
+body.printing-archive-cp #archive-wl-section{display:none!important;}
+body.printing-archive-wl #archive-tt-section,
+body.printing-archive-wl #archive-cp-section{display:none!important;}
 </style>
 </head>
 <body>
@@ -820,31 +830,37 @@ body.printing-timetable #overlay{display:none!important;}
 
       <!-- PANEL 4: ARCHIVE -->
       <div class="panel" id="panel-4">
-        <div id="archive-term-list"></div>
+        <div id="archive-term-list" class="no-print"></div>
         <div id="archive-viewer" style="display:none;margin-top:20px;padding-top:16px;border-top:2px solid var(--gray2);">
-          <h3 id="archive-viewer-title" style="margin:0 0 14px;color:var(--navy);"></h3>
+          <h3 id="archive-viewer-title" class="no-print" style="margin:0 0 14px;color:var(--navy);"></h3>
 
-          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Timetable</div>
-          <div class="section-selector no-print">
-            <button class="btn-print" onclick="window.print()">🖨️ Print Timetable</button>
+          <div id="archive-tt-section">
+            <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Timetable</div>
+            <div class="section-selector no-print">
+              <button class="btn-print" onclick="printArchiveTimetableOnly()">🖨️ Print Timetable</button>
+            </div>
+            <div id="archive-timetable-grid"></div>
           </div>
-          <div id="archive-timetable-grid"></div>
 
-          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Class Program</div>
-          <div class="section-selector no-print">
-            <label style="font-weight:700;font-size:13px;">Section:</label>
-            <select id="arc-cp-section-sel" onchange="renderArchiveClassProgram()"></select>
-            <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+          <div id="archive-cp-section">
+            <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Class Program</div>
+            <div class="section-selector no-print">
+              <label style="font-weight:700;font-size:13px;">Section:</label>
+              <select id="arc-cp-section-sel" onchange="renderArchiveClassProgram()"></select>
+              <button class="btn-print" onclick="printArchiveSection('cp')">🖨️ Print</button>
+            </div>
+            <div id="archive-class-program-doc"></div>
           </div>
-          <div id="archive-class-program-doc"></div>
 
-          <div style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Faculty Workload</div>
-          <div class="workload-select no-print">
-            <label style="font-weight:700;font-size:13px;">Faculty:</label>
-            <select id="arc-wl-inst-sel" onchange="renderArchiveWorkload()"></select>
-            <button class="btn-print" onclick="window.print()">🖨️ Print Workload</button>
+          <div id="archive-wl-section">
+            <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin:24px 0 6px;">Faculty Workload</div>
+            <div class="workload-select no-print">
+              <label style="font-weight:700;font-size:13px;">Faculty:</label>
+              <select id="arc-wl-inst-sel" onchange="renderArchiveWorkload()"></select>
+              <button class="btn-print" onclick="printArchiveSection('wl')">🖨️ Print Workload</button>
+            </div>
+            <div id="archive-workload-doc"></div>
           </div>
-          <div id="archive-workload-doc"></div>
         </div>
       </div>
     </div>

@@ -408,7 +408,38 @@ function dayDisplay(key){const d=STATE.dayClusters.find(x=>x.key===key);return d
 // PRINT
 // ============================================================
 function printTimetableOnly(){document.body.classList.add('printing-timetable');window.print();}
-window.addEventListener('afterprint',()=>document.body.classList.remove('printing-timetable'));
+function printArchiveTimetableOnly(){document.body.classList.add('printing-archive-timetable');window.print();}
+function printArchiveSection(which){document.body.classList.add('printing-archive-'+which);window.print();}
+
+// Shrinks each day-cluster's font-size (via the --tt-font CSS variable) just
+// enough that its WHOLE table — header, every timeslot row, lunch row —
+// fits within one printed landscape page, so no day cluster ever spills
+// onto a second page or leaves a blank page above it. Runs right before
+// print, since that's the only point the real rendered height is known.
+function fitTimetablesToOnePage(){
+  const MAX_H=750; // ~200mm usable height at 5mm margins, A4 landscape, 96dpi
+  const BASE_FONT=6.5;
+  document.querySelectorAll('.grid-wrap').forEach(wrap=>{
+    wrap.style.setProperty('--tt-font',BASE_FONT+'px');
+    let naturalH=wrap.scrollHeight;
+    if(naturalH>MAX_H){
+      let font=BASE_FONT*(MAX_H/naturalH);
+      wrap.style.setProperty('--tt-font',font.toFixed(2)+'px');
+      // One correction pass: borders/other non-scaling bits keep the
+      // relationship from being perfectly linear, so remeasure once more.
+      const correctedH=wrap.scrollHeight;
+      if(correctedH>MAX_H){
+        font=font*(MAX_H/correctedH);
+        wrap.style.setProperty('--tt-font',font.toFixed(2)+'px');
+      }
+    }
+  });
+}
+window.addEventListener('beforeprint',fitTimetablesToOnePage);
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('printing-timetable','printing-archive-timetable','printing-archive-cp','printing-archive-wl');
+  document.querySelectorAll('.grid-wrap').forEach(wrap=>wrap.style.removeProperty('--tt-font'));
+});
 
 // ============================================================
 // SIDEBAR — SETUP GATE + POPULATE
