@@ -38,7 +38,8 @@ let STATE = {
   // Program/Faculty Workload tabs (which always show the CURRENT term).
   terms:[], currentTerm:{academic_year:'2025-2026', semester:'1st Semester'},
   archiveTerm:null, archiveSchedules:[],
-  signatories:{wl_prepared_by:'',wl_verified_by:'',wl_campus_director:'',wl_dean:'',wl_vp_academic:'',wl_approved_by:'',cp_prepared_by:'',cp_approved_by:''}
+  signatories:{wl_prepared_by:'',wl_verified_by:'',wl_campus_director:'',wl_dean:'',wl_vp_academic:'',wl_approved_by:'',cp_prepared_by:'',cp_approved_by:'',
+               sc_prepared_by:'',sc_verified_by:'',sc_campus_director:'',sc_vp_academic:'',sc_dean:'',sc_approved_by:''}
 };
 
 // ============================================================
@@ -150,7 +151,7 @@ function wlToggle(el){
     <div class="wl-sig-row">
       <div class="wl-sig-cell">
         <div class="wl-sig-label">Prepared by:</div>
-        <input class="sign-line" value="" placeholder="Department Dean / Name">
+        <input class="sign-line" value="${escAttr(STATE.signatories?.sc_prepared_by||'')}" placeholder="Department Dean / Name">
         <div class="sign-role" contenteditable="true" style="outline:none;">Department Dean</div>
       </div>
       <div class="wl-sig-cell">
@@ -160,7 +161,7 @@ function wlToggle(el){
       </div>
       <div class="wl-sig-cell">
         <div class="wl-sig-label">Verified by:</div>
-        <input class="sign-line" value="" placeholder="Registrar">
+        <input class="sign-line" value="${escAttr(STATE.signatories?.sc_verified_by||'')}" placeholder="Registrar">
         <div class="sign-role">Registrar</div>
       </div>
     </div>
@@ -170,15 +171,15 @@ function wlToggle(el){
       <div class="wl-sig-block-label">Recommending Approval:</div>
       <div class="wl-sig-row">
         <div class="wl-sig-cell">
-          <input class="sign-line" value="" placeholder="Campus Director">
+          <input class="sign-line" value="${escAttr(STATE.signatories?.sc_campus_director||'')}" placeholder="Campus Director">
           <div class="sign-role">Campus Director</div>
         </div>
         <div class="wl-sig-cell">
-          <input class="sign-line" value="" placeholder="VP for Academic Affairs">
+          <input class="sign-line" value="${escAttr(STATE.signatories?.sc_vp_academic||'')}" placeholder="VP for Academic Affairs">
           <div class="sign-role">Vice President for Academic Affairs</div>
         </div>
         <div class="wl-sig-cell">
-          <input class="sign-line" value="" placeholder="Dean, College of Teacher Education">
+          <input class="sign-line" value="${escAttr(STATE.signatories?.sc_dean||'')}" placeholder="Dean, College of Teacher Education">
           <div class="sign-role">Dean, College of Teacher Education</div>
         </div>
       </div>
@@ -187,7 +188,7 @@ function wlToggle(el){
     <!-- Row 3: Approved -->
     <div class="wl-sig-approved">
       <div class="wl-sig-label">Approved:</div>
-      <input class="sign-line" value="" placeholder="University President">
+      <input class="sign-line" value="${escAttr(STATE.signatories?.sc_approved_by||'')}" placeholder="University President">
       <div class="sign-role">President</div>
     </div>`;
 
@@ -363,7 +364,9 @@ async function loadState(){instColorClear&&instColorClear();
     if(acYearEl)acYearEl.value=settings.academic_year||'2025-2026';
     if(acSemEl)acSemEl.value=settings.semester||'1st Semester';
     const sigMap={'sig-wl-prepared':'wl_prepared_by','sig-wl-verified':'wl_verified_by','sig-wl-campus':'wl_campus_director',
-                  'sig-wl-dean':'wl_dean','sig-wl-approved':'wl_approved_by','sig-cp-prepared':'cp_prepared_by','sig-cp-approved':'cp_approved_by'};
+                  'sig-wl-dean':'wl_dean','sig-wl-approved':'wl_approved_by','sig-cp-prepared':'cp_prepared_by','sig-cp-approved':'cp_approved_by',
+                  'sig-sc-prepared':'sc_prepared_by','sig-sc-verified':'sc_verified_by','sig-sc-campus':'sc_campus_director',
+                  'sig-sc-vp':'sc_vp_academic','sig-sc-dean':'sc_dean','sig-sc-approved':'sc_approved_by'};
     Object.entries(sigMap).forEach(([elId,key])=>{
       const el=document.getElementById(elId);
       if(el)el.value=signatories[key]||'';
@@ -387,7 +390,13 @@ async function saveSignatories(){
     wl_dean:document.getElementById('sig-wl-dean').value.trim(),
     wl_approved_by:document.getElementById('sig-wl-approved').value.trim(),
     cp_prepared_by:document.getElementById('sig-cp-prepared').value.trim(),
-    cp_approved_by:document.getElementById('sig-cp-approved').value.trim()
+    cp_approved_by:document.getElementById('sig-cp-approved').value.trim(),
+    sc_prepared_by:document.getElementById('sig-sc-prepared').value.trim(),
+    sc_verified_by:document.getElementById('sig-sc-verified').value.trim(),
+    sc_campus_director:document.getElementById('sig-sc-campus').value.trim(),
+    sc_vp_academic:document.getElementById('sig-sc-vp').value.trim(),
+    sc_dean:document.getElementById('sig-sc-dean').value.trim(),
+    sc_approved_by:document.getElementById('sig-sc-approved').value.trim()
   };
   try{
     const updated=await apiPut('/signatories',payload);

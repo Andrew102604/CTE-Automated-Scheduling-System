@@ -844,6 +844,37 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                     <label style="font-size:11px;color:var(--gray3);">Approved by</label>
                     <input type="text" id="sig-cp-approved" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
                   </div>
+                </div>
+              </div>
+
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Service Credit Signatories <span style="font-weight:400;color:var(--gray3);">(optional)</span></div>
+                <div class="mgr-section-sub" style="margin-bottom:10px;">Only used on the Faculty Workload's Service Credit page — separate from the regular signatories above, since Service Credit has its own set of signers (Department Dean, 3-way Recommending Approval, President).</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Prepared by (Department Dean)</label>
+                    <input type="text" id="sig-sc-prepared" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Verified by (Registrar)</label>
+                    <input type="text" id="sig-sc-verified" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Recommending Approval — Campus Director</label>
+                    <input type="text" id="sig-sc-campus" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Recommending Approval — Vice President for Academic Affairs</label>
+                    <input type="text" id="sig-sc-vp" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Recommending Approval — Dean, College of Teacher Education</label>
+                    <input type="text" id="sig-sc-dean" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Approved by (President)</label>
+                    <input type="text" id="sig-sc-approved" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
                   <button class="mgr-btn" onclick="saveSignatories()" style="align-self:flex-start;">Save</button>
                 </div>
                 <div class="inline-err" id="sig-err"></div>

@@ -22,6 +22,28 @@ router.put('/settings', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ---------- SIGNATORIES (auto-fills Faculty Workload / Class Program signature blocks) ----------
+router.get('/signatories', async (req, res) => {
+  try {
+    const r = await db.execute(`SELECT wl_prepared_by, wl_verified_by, wl_campus_director, wl_dean, wl_vp_academic, wl_approved_by, cp_prepared_by, cp_approved_by, sc_prepared_by, sc_verified_by, sc_campus_director, sc_vp_academic, sc_dean, sc_approved_by FROM signatory_settings WHERE id = 1`);
+    res.json(r.rows[0] || { wl_prepared_by:'', wl_verified_by:'', wl_campus_director:'', wl_dean:'', wl_vp_academic:'', wl_approved_by:'', cp_prepared_by:'', cp_approved_by:'', sc_prepared_by:'', sc_verified_by:'', sc_campus_director:'', sc_vp_academic:'', sc_dean:'', sc_approved_by:'' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/signatories', async (req, res) => {
+  const f = ['wl_prepared_by','wl_verified_by','wl_campus_director','wl_dean','wl_vp_academic','wl_approved_by','cp_prepared_by','cp_approved_by',
+             'sc_prepared_by','sc_verified_by','sc_campus_director','sc_vp_academic','sc_dean','sc_approved_by'];
+  const vals = f.map(k => (req.body[k] || '').toString().trim());
+  try {
+    await db.execute({
+      sql: `UPDATE signatory_settings SET wl_prepared_by=?, wl_verified_by=?, wl_campus_director=?, wl_dean=?, wl_vp_academic=?, wl_approved_by=?, cp_prepared_by=?, cp_approved_by=?,
+            sc_prepared_by=?, sc_verified_by=?, sc_campus_director=?, sc_vp_academic=?, sc_dean=?, sc_approved_by=? WHERE id = 1`,
+      args: vals
+    });
+    const out = {}; f.forEach((k,i)=>out[k]=vals[i]);
+    res.json(out);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ---------- MAJORS ----------
 router.get('/majors', async (req, res) => {
   try {

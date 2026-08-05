@@ -36,6 +36,26 @@ async function init() {
       academic_year TEXT NOT NULL DEFAULT '2025-2026',
       semester      TEXT NOT NULL DEFAULT '1st Semester'
     )`,
+    // Single global set of signatory names, entered once in Manage Data >
+    // Signatories, that auto-fills into every printed Faculty Workload and
+    // Class Program document instead of being typed per-document.
+    `CREATE TABLE IF NOT EXISTS signatory_settings (
+      id                    INTEGER PRIMARY KEY CHECK (id = 1),
+      wl_prepared_by        TEXT NOT NULL DEFAULT '',
+      wl_verified_by        TEXT NOT NULL DEFAULT '',
+      wl_campus_director    TEXT NOT NULL DEFAULT '',
+      wl_dean               TEXT NOT NULL DEFAULT '',
+      wl_vp_academic        TEXT NOT NULL DEFAULT '',
+      wl_approved_by        TEXT NOT NULL DEFAULT '',
+      cp_prepared_by        TEXT NOT NULL DEFAULT '',
+      cp_approved_by        TEXT NOT NULL DEFAULT '',
+      sc_prepared_by        TEXT NOT NULL DEFAULT '',
+      sc_verified_by        TEXT NOT NULL DEFAULT '',
+      sc_campus_director    TEXT NOT NULL DEFAULT '',
+      sc_vp_academic        TEXT NOT NULL DEFAULT '',
+      sc_dean               TEXT NOT NULL DEFAULT '',
+      sc_approved_by        TEXT NOT NULL DEFAULT ''
+    )`,
     `CREATE TABLE IF NOT EXISTS majors (
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       name  TEXT NOT NULL,
@@ -120,8 +140,21 @@ async function init() {
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation2_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3 TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
+  // Recommending Approval on the Faculty Workload also needs the VP for
+  // Academic Affairs alongside Campus Director and Dean.
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN wl_vp_academic TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  // Service Credit has its own separate, optional signatory set: Department
+  // Dean as preparer, 3-way Recommending Approval, President as Approved —
+  // distinct from the regular Faculty Workload signatories above.
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_prepared_by TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_verified_by TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_campus_director TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_vp_academic TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_dean TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN sc_approved_by TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
   try {
     await db.execute(`INSERT OR IGNORE INTO academic_settings (id, academic_year, semester) VALUES (1, '2025-2026', '1st Semester')`);
+  await db.execute(`INSERT OR IGNORE INTO signatory_settings (id) VALUES (1)`);
   } catch (e) { /* already exists */ }
   try {
     await db.execute(`CREATE TABLE IF NOT EXISTS instructor_can_handle (
