@@ -719,7 +719,9 @@ function renderClassProgram(){
 // ============================================================
 // FACULTY WORKLOAD
 // ============================================================
-const LOAD_MAX={regular:18,overload:9,emergency:3,praise:6};
+// regular is prep-dependent (15 if 4+ preps, 18 if 3 or fewer) — computed
+// per-instructor in renderWorkload() as `regularCeiling`, not used from here.
+const LOAD_MAX={overload:9,emergency:3,praise:6};
 
 // Faculty Workload units: lab subjects count 2.25x per unit
 // (1 lab unit = 2.25 WL units, 2 lab units = 4.5 WL units)
@@ -755,7 +757,7 @@ function renderWorkload(){
 
   // Designation (e.g. Extension Coordinator) and Special Assignment (e.g. a
   // Research/Extension Project) both reserve space inside the Regular
-  // 18-unit ceiling first. The remaining teaching-load subjects are then
+  // ceiling first. The remaining teaching-load subjects are then
   // distributed Regular -> Overload -> Emergency -> Praise using a real
   // subset-sum search at each tier: rather than a fixed rule like "whole
   // numbers first", it tries every combination and picks whichever subset
@@ -766,6 +768,12 @@ function renderWorkload(){
   const desigName=inst.designation||'';
   const specialUnits=inst.special_assignment_units||0;
   const specialName=inst.special_assignment||'';
+
+  // Regular-load ceiling depends on the instructor's total number of preps
+  // (distinct subjects taught, counted across ALL their assigned schedules):
+  // 4 or more preps -> Regular ceiling is 15 units; 3 or fewer -> 18 units.
+  const totalPrepCount=new Set(rows.map(r=>r.code)).size;
+  const regularCeiling=totalPrepCount>=4?15:18;
 
   // 0/1 knapsack: given a list of {row,units} items, finds the subset whose
   // units sum is the maximum possible without exceeding `capacity`. Units
@@ -800,7 +808,7 @@ function renderWorkload(){
     pool=pool.filter(x=>!pickedSet.has(x));
     return picked.map(x=>x.row);
   };
-  const regular=take(LOAD_MAX.regular-(desigUnits+specialUnits));
+  const regular=take(regularCeiling-(desigUnits+specialUnits));
   const overload=take(LOAD_MAX.overload);
   const emergency=take(LOAD_MAX.emergency);
   const praise=pool.map(x=>x.row); // whatever's left, no cap - last resort
