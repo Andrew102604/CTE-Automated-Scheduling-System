@@ -97,7 +97,9 @@ async function init() {
       num_students   INTEGER NOT NULL DEFAULT 0,
       day_key        TEXT NOT NULL REFERENCES day_clusters(key),
       timeslot_label TEXT NOT NULL REFERENCES timeslots(label),
-      room_id        INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE
+      room_id        INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+      academic_year  TEXT NOT NULL DEFAULT '',
+      semester       TEXT NOT NULL DEFAULT ''
     )`
   ];
 
@@ -128,6 +130,26 @@ async function init() {
       PRIMARY KEY (instructor_id, major_id)
     )`);
   } catch (e) { /* already exists */ }
+
+  // Semester scoping for schedules, so creating a new semester's loading
+  // never touches/deletes another semester's saved schedules — each
+  // schedule row is stamped with the academic_year/semester it was created
+  // under, and all schedule queries filter by the CURRENT academic_settings.
+  try { await db.execute(`ALTER TABLE schedules ADD COLUMN academic_year TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE schedules ADD COLUMN semester TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+  // Backfill: any pre-existing schedule rows saved before this feature
+  // existed (blank academic_year/semester) belong to whatever semester is
+  // CURRENTLY set, since that's what they were created under.
+  try {
+    const cur = await db.execute(`SELECT academic_year, semester FROM academic_settings WHERE id = 1`);
+    const row = cur.rows[0];
+    if (row) {
+      await db.execute({
+        sql: `UPDATE schedules SET academic_year = ?, semester = ? WHERE academic_year = '' OR semester = ''`,
+        args: [row.academic_year, row.semester]
+      });
+    }
+  } catch (e) { /* best-effort backfill */ }
 }
 
 const ready = init();

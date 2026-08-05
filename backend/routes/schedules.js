@@ -60,13 +60,29 @@ async function fullSchedule(row) {
     day_key: row.day_key,
     timeslot_label: row.timeslot_label,
     room_id: row.room_id,
-    room_name: room ? room.name : '—'
+    room_name: room ? room.name : '—',
+    academic_year: row.academic_year,
+    semester: row.semester
   };
+}
+
+// The CURRENT academic year + semester (from academic_settings) is what
+// scopes every schedule read/write below — this is what keeps 2nd Semester
+// loading from ever touching/deleting 1st Semester's saved schedules: each
+// schedule row remembers which semester it was created under, and every
+// query here only ever looks at rows matching what's currently set.
+async function currentTerm() {
+  const r = await db.execute(`SELECT academic_year, semester FROM academic_settings WHERE id = 1`);
+  return r.rows[0] || { academic_year: '2025-2026', semester: '1st Semester' };
 }
 
 router.get('/schedules', async (req, res) => {
   try {
-    const r = await db.execute(`SELECT * FROM schedules`);
+    const term = await currentTerm();
+    const r = await db.execute({
+      sql: `SELECT * FROM schedules WHERE academic_year = ? AND semester = ?`,
+      args: [term.academic_year, term.semester]
+    });
     res.json(await Promise.all(r.rows.map(fullSchedule)));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -77,6 +93,7 @@ router.post('/schedules', async (req, res) => {
     if (!instructor_id || !subject_id || !section || !day_key || !timeslot_label || !room_id) {
       return res.status(400).json({ error: 'All fields (instructor, subject, section, day, timeslot, room) are required.' });
     }
+    const term = await currentTerm();
 
     const [instR, subjR, roomR] = await Promise.all([
       db.execute({ sql: `SELECT * FROM instructors WHERE id = ?`, args: [instructor_id] }),
@@ -99,9 +116,11 @@ router.post('/schedules', async (req, res) => {
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject's major.` });
     }
 
+    // Conflict checks only look within the SAME semester — the same room/
+    // instructor/section can be reused freely across different semesters.
     const sameDayR = await db.execute({
-      sql: `SELECT * FROM schedules WHERE day_key = ?`,
-      args: [day_key]
+      sql: `SELECT * FROM schedules WHERE day_key = ? AND academic_year = ? AND semester = ?`,
+      args: [day_key, term.academic_year, term.semester]
     });
     const sameDayTimeR = { rows: sameDayR.rows.filter(s => timeslotsOverlap(s.timeslot_label, timeslot_label)) };
     for (const s of sameDayTimeR.rows) {
@@ -117,9 +136,9 @@ router.post('/schedules', async (req, res) => {
     }
 
     const info = await db.execute({
-      sql: `INSERT INTO schedules (instructor_id, subject_id, section, num_students, day_key, timeslot_label, room_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [instructor_id, subject_id, section.trim(), num_students ?? 0, day_key, timeslot_label, room_id]
+      sql: `INSERT INTO schedules (instructor_id, subject_id, section, num_students, day_key, timeslot_label, room_id, academic_year, semester)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [instructor_id, subject_id, section.trim(), num_students ?? 0, day_key, timeslot_label, room_id, term.academic_year, term.semester]
     });
     const r = await db.execute({ sql: `SELECT * FROM schedules WHERE id = ?`, args: [Number(info.lastInsertRowid)] });
     res.status(201).json(await fullSchedule(r.rows[0]));
@@ -168,9 +187,12 @@ router.put('/schedules/:id', async (req, res) => {
     if (!instructorMajorIds.includes(subject.major_id))
       return res.status(409).json({ error: `Major mismatch! ${instructor.name} cannot teach this subject.` });
 
+    // Stays within the schedule row's own semester (an edit never moves a
+    // schedule to a different semester), so conflicts are only checked
+    // against schedules from that same semester.
     const sameDayR = await db.execute({
-      sql: `SELECT * FROM schedules WHERE day_key = ? AND id != ?`,
-      args: [day_key, id]
+      sql: `SELECT * FROM schedules WHERE day_key = ? AND id != ? AND academic_year = ? AND semester = ?`,
+      args: [day_key, id, existing.academic_year, existing.semester]
     });
     const sameDayTimeR = { rows: sameDayR.rows.filter(s => timeslotsOverlap(s.timeslot_label, timeslot_label)) };
     for (const s of sameDayTimeR.rows) {
@@ -191,9 +213,15 @@ router.put('/schedules/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Reset only clears the schedules of the CURRENTLY selected semester —
+// other semesters' saved schedules are untouched.
 router.delete('/schedules', async (req, res) => {
   try {
-    await db.execute(`DELETE FROM schedules`);
+    const term = await currentTerm();
+    await db.execute({
+      sql: `DELETE FROM schedules WHERE academic_year = ? AND semester = ?`,
+      args: [term.academic_year, term.semester]
+    });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -201,7 +229,11 @@ router.delete('/schedules', async (req, res) => {
 // ---------- Derived view: distinct sections (for Class Program selector) ----------
 router.get('/sections', async (req, res) => {
   try {
-    const r = await db.execute(`SELECT DISTINCT section FROM schedules ORDER BY section`);
+    const term = await currentTerm();
+    const r = await db.execute({
+      sql: `SELECT DISTINCT section FROM schedules WHERE academic_year = ? AND semester = ? ORDER BY section`,
+      args: [term.academic_year, term.semester]
+    });
     res.json(r.rows.map(row => row.section));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

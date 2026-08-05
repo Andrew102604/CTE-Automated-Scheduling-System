@@ -539,7 +539,7 @@ function showMsg(txt,ok){
 }
 
 async function resetSchedules(){
-  if(!confirm('Reset ALL schedules? This cannot be undone.'))return;
+  if(!confirm(`Reset ALL schedules for ${STATE.settings?.semester||'the current semester'}, AY ${STATE.settings?.academic_year||''}? Other semesters' saved schedules are not affected. This cannot be undone.`))return;
   try{await apiDelete('/schedules');await loadState();renderAll();}
   catch(e){showMsg(e.message,false);}
 }
