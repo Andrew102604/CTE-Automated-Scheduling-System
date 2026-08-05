@@ -1118,8 +1118,8 @@ function renderManageData(){
               <div class="lsub">${escHtml(i.qualification||'')}${i.years_service?' | '+i.years_service+' yrs':''}${i.salary_grade?' | SG '+i.salary_grade:''}</div>
               ${i.designation?`<div class="lsub"><b>Designation:</b> ${escHtml(i.designation)} (${i.designation_units||0} units)</div>`:''}
               ${i.special_assignment?`<div class="lsub"><b>Special Assignment:</b> ${escHtml(i.special_assignment)} (${i.special_assignment_units||0} units)</div>`:''}
-              ${i.designation2?`<div class="lsub"><b>2nd Designation (PRAISE):</b> ${escHtml(i.designation2)} (${i.designation2_units||0} units)</div>`:''}
-              ${i.designation3?`<div class="lsub"><b>3rd Designation (Service Credit):</b> ${escHtml(i.designation3)} (${i.designation3_units||0} units)</div>`:''}
+              ${i.designation2?`<div class="lsub"><b>Praise Load Designation:</b> ${escHtml(i.designation2)} (${i.designation2_units||0} units)</div>`:''}
+              ${i.designation3?`<div class="lsub"><b>Service Credit Designation:</b> ${escHtml(i.designation3)} (${i.designation3_units||0} units)</div>`:''}
               <div class="major-tags">${i.majors.map(m=>`<span class="major-tag">${escHtml(m.name)}</span>`).join('')}</div>
               ${(i.can_handle&&i.can_handle.length)?`<div style="font-size:10px;color:#555;margin-top:3px;"><b>Can handle:</b> ${[...new Set(i.can_handle.map(m=>m.name))].map(n=>escHtml(n)).join(', ')}</div>`:''}
             </div>
@@ -1171,11 +1171,11 @@ function renderManageData(){
               <input type="number" id="inst-specialunits-${i.id}" value="${i.special_assignment_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
             <div style="display:flex;gap:6px;margin-bottom:6px;">
-              <input type="text" id="inst-desig2-${i.id}" value="${escAttr(i.designation2||'')}" placeholder="2nd Designation — goes to PRAISE Load" style="flex:1;">
+              <input type="text" id="inst-desig2-${i.id}" value="${escAttr(i.designation2||'')}" placeholder="Praise Load Designation" style="flex:1;">
               <input type="number" id="inst-desig2units-${i.id}" value="${i.designation2_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
             <div style="display:flex;gap:6px;margin-bottom:6px;">
-              <input type="text" id="inst-desig3-${i.id}" value="${escAttr(i.designation3||'')}" placeholder="3rd Designation — goes to Service Credit Load" style="flex:1;">
+              <input type="text" id="inst-desig3-${i.id}" value="${escAttr(i.designation3||'')}" placeholder="Service Credit Designation" style="flex:1;">
               <input type="number" id="inst-desig3units-${i.id}" value="${i.designation3_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
             <div style="font-size:11px;font-weight:700;color:var(--gray3);margin-bottom:4px;">MAJORS</div>
