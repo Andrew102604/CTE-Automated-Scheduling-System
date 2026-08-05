@@ -719,9 +719,18 @@ function renderClassProgram(){
 // ============================================================
 // FACULTY WORKLOAD
 // ============================================================
-// regular is prep-dependent (15 if 4+ preps, 18 if 3 or fewer) — computed
-// per-instructor in renderWorkload() as `regularCeiling`, not used from here.
-const LOAD_MAX={overload:9,emergency:3,praise:6};
+const LOAD_MAX={regular:18,overload:9,emergency:3,praise:6};
+
+// Subjects that must always land in the Regular card, never bumped down to
+// Overload/Emergency/Praise, regardless of unit-fit — Field Study 1, Field
+// Study 2, and Educ 11. Matched loosely against the subject's code/desc so
+// "Field Study I", "Field Study 2", "FS 1", "Educ 11", etc. all match.
+function isAlwaysRegular(r){
+  const code=(r.code||'').trim().toLowerCase();
+  const desc=(r.desc||'').trim().toLowerCase();
+  const hay=code+' '+desc;
+  return /field\s*study/.test(hay) || /\beduc\s*11\b/.test(hay);
+}
 
 // Faculty Workload units: lab subjects count 2.25x per unit
 // (1 lab unit = 2.25 WL units, 2 lab units = 4.5 WL units)
@@ -769,11 +778,10 @@ function renderWorkload(){
   const specialUnits=inst.special_assignment_units||0;
   const specialName=inst.special_assignment||'';
 
-  // Regular-load ceiling depends on the instructor's total number of preps
-  // (distinct subjects taught, counted across ALL their assigned schedules):
-  // 4 or more preps -> Regular ceiling is 15 units; 3 or fewer -> 18 units.
+  // Total prep count is still shown on the Regular card (see block() below),
+  // but the Regular ceiling itself is back to a flat 18 units for everyone.
   const totalPrepCount=new Set(rows.map(r=>r.code)).size;
-  const regularCeiling=totalPrepCount>=4?15:18;
+  const regularCeiling=LOAD_MAX.regular;
 
   // 0/1 knapsack: given a list of {row,units} items, finds the subset whose
   // units sum is the maximum possible without exceeding `capacity`. Units
@@ -802,13 +810,22 @@ function renderWorkload(){
   }
 
   let pool=rows.map(r=>({row:r,units:wlUnits(r)}));
+
+  // Pull out Field Study 1/2 and Educ 11 first — they're guaranteed a seat
+  // in Regular and skip the subset-sum entirely, so they never get bumped
+  // to Overload just because some other combination fits the cap better.
+  const forcedRegular=pool.filter(x=>isAlwaysRegular(x.row));
+  pool=pool.filter(x=>!isAlwaysRegular(x.row));
+  const forcedRegularUnits=forcedRegular.reduce((a,x)=>a+x.units,0);
+
   const take=(capacity)=>{
     const picked=bestFit(pool,capacity);
     const pickedSet=new Set(picked);
     pool=pool.filter(x=>!pickedSet.has(x));
     return picked.map(x=>x.row);
   };
-  const regular=take(regularCeiling-(desigUnits+specialUnits));
+  const regularRest=take(Math.max(0,regularCeiling-(desigUnits+specialUnits)-forcedRegularUnits));
+  const regular=[...forcedRegular.map(x=>x.row),...regularRest];
   const overload=take(LOAD_MAX.overload);
   const emergency=take(LOAD_MAX.emergency);
   const praise=pool.map(x=>x.row); // whatever's left, no cap - last resort
@@ -1015,7 +1032,7 @@ function renderWorkload(){
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
-            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-total" data-base="${total}">${total+(desigForBlock||0)+(specialForBlock||0)}</td>
+            <td style="border:1.5px solid #444;padding:5px 8px;text-align:center;font-weight:700;color:#000 !important;" id="${cardId}-total" data-base="${total}" contenteditable="true">${total+(desigForBlock||0)+(specialForBlock||0)}</td>
             <td style="border-top:1.5px solid #444;border-bottom:1.5px solid #444;border-right:1.5px solid #444;"></td>
           </tr>
         </tbody>
