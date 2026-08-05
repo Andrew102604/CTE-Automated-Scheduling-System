@@ -839,7 +839,11 @@ function renderWorkload(){
 
   const block=(label,arr,total,desigForBlock=0,desigNameForBlock='',specialForBlock=0,specialNameForBlock='')=>{
     if(!arr.length&&!desigForBlock&&!specialForBlock)return'';
-    const noPrep=[...new Set(arr.map(r=>r.code))].length;
+    // No. of Preparation is only shown on the Regular card, using the
+    // instructor's TOTAL prep count across all load tiers — this is what
+    // decides the 15-vs-18 Regular ceiling, so it belongs on Regular alone.
+    // Overload/Emergency/Praise cards leave this field blank.
+    const noPrep=label==='Regular'?totalPrepCount:'';
     const majOnlyStr=inst.majors.filter(m=>(m.type||'Major')==='Major').map(m=>m.name).join(', ')||'—';
     const minorStr=inst.majors.filter(m=>m.type==='Minor').map(m=>m.name).join(', ')||'';
     const cardId='wl-card-'+(wlCardIdx++);
