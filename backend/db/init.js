@@ -135,6 +135,52 @@ async function init() {
   // semester and stop mixing up which courses belong to which term. Blank
   // = not yet tagged, shows regardless of semester (until an admin sets it).
   try { await db.execute(`ALTER TABLE subjects ADD COLUMN semester TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
+
+  // One-time (idempotent) backfill: tags each subject's Semester based on
+  // the NEMSU Tagbina BEED and BSED-Science curricula, so existing/newly
+  // added subjects don't need to be tagged by hand one by one. Only ever
+  // touches rows where semester is still blank ('') — an admin's manual
+  // edit in Manage Data is never overwritten.
+  //
+  // Most course codes fall in the same semester in BOTH curricula, so
+  // those are matched by code alone (any program). A handful of codes
+  // are reused by both programs for DIFFERENT courses offered in
+  // DIFFERENT semesters (e.g. Educ 6 is 1st Sem in BSED-Science but 2nd
+  // Sem in BEED) — those are matched by code AND program together so
+  // the two curricula never cross-contaminate each other.
+  try {
+    const sem1 = ['GE-US','GE-MMW','GE-PC','Chem 1','Sci 101','Phys A','PathFit 1','NSTP 1',
+      'Eng 2','Chem 3','Bio 1','Phys 2','PathFit 3',
+      'Bio 2','Phys 4','Phys 5','Sci 104','Sci 105','Res 1','Res. 1','RES 1','Educ 1','Educ 2','Educ 5',
+      'FS 1','FS 2','CA 2',
+      'English 101','Music','TLE 101','PEH','Filipino 101','GE-Rizal','MTB-MLE','Math 101','SS 101'];
+    const sem2 = ['GE-RPH','GE-CW','Eng 1','GE-PEE','Chem 2','Phys 1','PathFit 2','NSTP 2',
+      'GE-PPC','Chem 4','Phys 3','Sci 103','Educ 3','Educ 4',
+      'Rizal','Res 2','Res. 2','RES 2','Sci 106','Bio 3','Bio 4','Educ 9','Educ 10','CA 1','Educ 11',
+      'English 1','TLE 102','Filipino 102','English 102','VED','Elective','Math 102','SS 102','ARTS','TTL'];
+    for (const code of sem1) {
+      await db.execute({ sql: `UPDATE subjects SET semester='1st Semester' WHERE UPPER(TRIM(code))=UPPER(?) AND semester=''`, args: [code] });
+    }
+    for (const code of sem2) {
+      await db.execute({ sql: `UPDATE subjects SET semester='2nd Semester' WHERE UPPER(TRIM(code))=UPPER(?) AND semester=''`, args: [code] });
+    }
+    // Codes reused by both curricula for a different course in a different
+    // semester — disambiguated by the subject's own Program (BEED/BSED).
+    const perProgram = [
+      { code:'GE-E',    bsed:'1st Semester', beed:'2nd Semester' },
+      { code:'GE-AA',   bsed:'2nd Semester', beed:'1st Semester' },
+      { code:'GE-GS',   bsed:'1st Semester', beed:'2nd Semester' },
+      { code:'GE-STS',  bsed:'2nd Semester', beed:'1st Semester' },
+      { code:'Sci 102', bsed:'1st Semester', beed:'2nd Semester' },
+      { code:'Educ 6',  bsed:'1st Semester', beed:'2nd Semester' },
+      { code:'Educ 7',  bsed:'2nd Semester', beed:'1st Semester' },
+      { code:'Educ 8',  bsed:'2nd Semester', beed:'1st Semester' }
+    ];
+    for (const p of perProgram) {
+      await db.execute({ sql: `UPDATE subjects SET semester=? WHERE UPPER(TRIM(code))=UPPER(?) AND program='BSED' AND semester=''`, args: [p.bsed, p.code] });
+      await db.execute({ sql: `UPDATE subjects SET semester=? WHERE UPPER(TRIM(code))=UPPER(?) AND program='BEED' AND semester=''`, args: [p.beed, p.code] });
+    }
+  } catch (e) { /* best-effort backfill */ }
   try { await db.execute(`ALTER TABLE majors ADD COLUMN type TEXT NOT NULL DEFAULT 'Major'`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
