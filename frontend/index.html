@@ -580,6 +580,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <div class="mgr-nav-item" onclick="mgSwitch('subjects',this)"><span class="mgr-nav-num">⑤</span> Courses</div>
             <div class="mgr-nav-item" onclick="mgSwitch('instructors',this)"><span class="mgr-nav-num">⑥</span> Instructors</div>
             <div class="mgr-nav-item" onclick="mgSwitch('academic',this)"><span class="mgr-nav-num">⑦</span> Academic Year</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('signatories',this)"><span class="mgr-nav-num">⑧</span> Signatories</div>
             <div class="mgr-nav-item" onclick="mgSwitch('credentials',this)"><span class="mgr-nav-num" style="color:var(--red);">🔐</span> Credentials</div>
           </nav>
 
@@ -798,6 +799,55 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                 </div>
                 <div class="inline-err" id="ac-err"></div>
                 <div class="auth-success" id="ac-ok" style="text-align:left;margin-top:8px;">Academic Year &amp; Semester updated.</div>
+              </div>
+            </div>
+
+            <!-- SIGNATORIES -->
+            <div class="mgr-section" id="mgs-signatories">
+              <div class="mgr-section-title">Signatories</div>
+              <div class="mgr-section-sub">Enter the names once here — they automatically fill into every printed Faculty Workload and Class Program document, so no need to type each name per document anymore.</div>
+
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Faculty Workload Signatories</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Prepared by (Department Chair)</label>
+                    <input type="text" id="sig-wl-prepared" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Verified by (Registrar)</label>
+                    <input type="text" id="sig-wl-verified" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Recommending Approval — Campus Director</label>
+                    <input type="text" id="sig-wl-campus" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Recommending Approval — Dean, College of Teacher Education</label>
+                    <input type="text" id="sig-wl-dean" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Approved by (Vice President for Academic Affairs)</label>
+                    <input type="text" id="sig-wl-approved" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Class Program Signatories</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Prepared by</label>
+                    <input type="text" id="sig-cp-prepared" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Approved by</label>
+                    <input type="text" id="sig-cp-approved" class="mgr-input" placeholder="FULL NAME, Credentials" style="width:100%;">
+                  </div>
+                  <button class="mgr-btn" onclick="saveSignatories()" style="align-self:flex-start;">Save</button>
+                </div>
+                <div class="inline-err" id="sig-err"></div>
+                <div class="auth-success" id="sig-ok" style="text-align:left;margin-top:8px;">Signatories updated.</div>
               </div>
             </div>
 

@@ -37,7 +37,8 @@ let STATE = {
   // browsing an old term never affects the live Timetable/Class
   // Program/Faculty Workload tabs (which always show the CURRENT term).
   terms:[], currentTerm:{academic_year:'2025-2026', semester:'1st Semester'},
-  archiveTerm:null, archiveSchedules:[]
+  archiveTerm:null, archiveSchedules:[],
+  signatories:{wl_prepared_by:'',wl_verified_by:'',wl_campus_director:'',wl_dean:'',wl_vp_academic:'',wl_approved_by:'',cp_prepared_by:'',cp_approved_by:''}
 };
 
 // ============================================================
@@ -352,20 +353,49 @@ function fetchSchedulesFor(term){
 
 async function loadState(){instColorClear&&instColorClear();
   try{
-    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,termsResp]=await Promise.all([
+    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,termsResp,signatories]=await Promise.all([
       apiGet('/majors'),apiGet('/rooms'),apiGet('/day-clusters'),apiGet('/timeslots'),
-      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules'),apiGet('/settings'),apiGet('/academic-terms')
+      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules'),apiGet('/settings'),apiGet('/academic-terms'),apiGet('/signatories')
     ]);
     STATE={...STATE,majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,
-           terms:termsResp.terms,currentTerm:termsResp.current};
+           terms:termsResp.terms,currentTerm:termsResp.current,signatories};
     const acYearEl=document.getElementById('ac-year'), acSemEl=document.getElementById('ac-semester');
     if(acYearEl)acYearEl.value=settings.academic_year||'2025-2026';
     if(acSemEl)acSemEl.value=settings.semester||'1st Semester';
+    const sigMap={'sig-wl-prepared':'wl_prepared_by','sig-wl-verified':'wl_verified_by','sig-wl-campus':'wl_campus_director',
+                  'sig-wl-dean':'wl_dean','sig-wl-approved':'wl_approved_by','sig-cp-prepared':'cp_prepared_by','sig-cp-approved':'cp_approved_by'};
+    Object.entries(sigMap).forEach(([elId,key])=>{
+      const el=document.getElementById(elId);
+      if(el)el.value=signatories[key]||'';
+    });
     setConn(true);
   }catch(e){
     setConn(false);
     if(!e.message.includes('Session'))showMsg(e.message,false);
   }
+}
+
+// Saves the global Signatories (Manage Data section) so the names
+// auto-fill into every printed Faculty Workload and Class Program document.
+async function saveSignatories(){
+  const err=document.getElementById('sig-err'), ok=document.getElementById('sig-ok');
+  err.style.display='none';ok.style.display='none';
+  const payload={
+    wl_prepared_by:document.getElementById('sig-wl-prepared').value.trim(),
+    wl_verified_by:document.getElementById('sig-wl-verified').value.trim(),
+    wl_campus_director:document.getElementById('sig-wl-campus').value.trim(),
+    wl_dean:document.getElementById('sig-wl-dean').value.trim(),
+    wl_approved_by:document.getElementById('sig-wl-approved').value.trim(),
+    cp_prepared_by:document.getElementById('sig-cp-prepared').value.trim(),
+    cp_approved_by:document.getElementById('sig-cp-approved').value.trim()
+  };
+  try{
+    const updated=await apiPut('/signatories',payload);
+    STATE.signatories=updated;
+    renderAll();
+    ok.style.display='block';
+    setTimeout(()=>ok.style.display='none',2500);
+  }catch(e){err.textContent=e.message;err.style.display='block';}
 }
 
 // Saves the global Academic Year + Semester (Manage Data section) so it can
@@ -744,13 +774,13 @@ function renderClassProgram(opts={}){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 40px;margin-top:36px;font-family:Arial,sans-serif;font-size:11px;">
       <div style="text-align:center;">
         <div style="color:#555;margin-bottom:28px;">Prepared by:</div>
-        <input class="sign-line" value="" placeholder="FULL NAME, Credentials"
+        <input class="sign-line" value="${escAttr(STATE.signatories?.cp_prepared_by||'')}" placeholder="FULL NAME, Credentials"
           style="width:220px;display:block;margin:0 auto;font-weight:700;font-size:11px;">
         <div class="sign-role" contenteditable="true" style="outline:none;margin-top:4px;min-width:220px;">Title / Position</div>
       </div>
       <div style="text-align:center;">
         <div style="color:#555;margin-bottom:28px;">Approved:</div>
-        <input class="sign-line" value="" placeholder="FULL NAME, Credentials"
+        <input class="sign-line" value="${escAttr(STATE.signatories?.cp_approved_by||'')}" placeholder="FULL NAME, Credentials"
           style="width:220px;display:block;margin:0 auto;font-weight:700;font-size:11px;">
         <div class="sign-role" contenteditable="true" style="outline:none;margin-top:4px;min-width:220px;">Title / Position</div>
       </div>
@@ -963,7 +993,7 @@ function renderWorkload(opts={}){
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px;margin-bottom:24px;">
           <div style="text-align:center;">
             <div style="font-size:11px;color:#333;margin-bottom:12px;">Prepared by:</div>
-            <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
+            <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(STATE.signatories?.wl_prepared_by||'')||'&nbsp;'}</div>
             <div style="font-size:11px;margin-top:2px;" contenteditable="true">Department Chair</div>
           </div>
           <div style="text-align:center;">
@@ -973,7 +1003,7 @@ function renderWorkload(opts={}){
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:#333;margin-bottom:12px;">Verified by:</div>
-            <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
+            <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(STATE.signatories?.wl_verified_by||'')||'&nbsp;'}</div>
             <div style="font-size:11px;margin-top:2px;" contenteditable="true">Registrar</div>
           </div>
         </div>
@@ -983,11 +1013,11 @@ function renderWorkload(opts={}){
           <div style="font-size:11px;color:#333;margin-bottom:12px;">Recommending Approval:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px;">
             <div style="text-align:center;">
-              <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
+              <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(STATE.signatories?.wl_campus_director||'')||'&nbsp;'}</div>
               <div style="font-size:11px;margin-top:2px;" contenteditable="true">Campus Director</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
+              <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(STATE.signatories?.wl_dean||'')||'&nbsp;'}</div>
               <div style="font-size:11px;margin-top:2px;" contenteditable="true">Dean, College of Teacher Education</div>
             </div>
           </div>
@@ -996,7 +1026,7 @@ function renderWorkload(opts={}){
         <!-- Row 3: Approved -->
         <div style="margin-top:24px;text-align:center;">
           <div style="font-size:11px;color:#333;margin-bottom:12px;">Approved:</div>
-          <div style="font-weight:700;font-size:12px;" contenteditable="true">&nbsp;</div>
+          <div style="font-weight:700;font-size:12px;" contenteditable="true">${escHtml(STATE.signatories?.wl_approved_by||'')||'&nbsp;'}</div>
           <div style="font-size:11px;margin-top:2px;" contenteditable="true">Vice President for Academic Affairs</div>
         </div>
 
