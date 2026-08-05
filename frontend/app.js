@@ -777,6 +777,12 @@ function renderWorkload(){
   const desigName=inst.designation||'';
   const specialUnits=inst.special_assignment_units||0;
   const specialName=inst.special_assignment||'';
+  // 2nd designation reserves units on the PRAISE Load card; 3rd designation
+  // reserves units on its own Service Credit Load card.
+  const desig2Units=inst.designation2_units||0;
+  const desig2Name=inst.designation2||'';
+  const desig3Units=inst.designation3_units||0;
+  const desig3Name=inst.designation3||'';
 
   // Total prep count is still shown on the Regular card (see block() below),
   // but the Regular ceiling itself is back to a flat 18 units for everyone.
@@ -954,7 +960,9 @@ function renderWorkload(){
         <span class="wl-checkbox">${label==='Emergency'?'✓':''}</span><span>Emergency Load</span>
         <span class="wl-checkbox">${label==='Overload'?'✓':''}</span><span>Overload</span>
         <span class="wl-checkbox">${label==='Praise'?'✓':''}</span><span>PRAISE Load</span>
-        <span class="wl-cb" data-card="${cardId}" data-val="Service Credit" onclick="wlToggle(this)"></span><span style="cursor:pointer;" onclick="wlToggle(this.previousElementSibling)">Service Credit</span>
+        ${label==='Service Credit'
+          ?`<span class="wl-checkbox">✓</span><span>Service Credit</span>`
+          :`<span class="wl-cb" data-card="${cardId}" data-val="Service Credit" onclick="wlToggle(this)"></span><span style="cursor:pointer;" onclick="wlToggle(this.previousElementSibling)">Service Credit</span>`}
         <span></span><span></span>
       </div>
 
@@ -1064,7 +1072,8 @@ function renderWorkload(){
     block('Regular',regular,regular.reduce((a,r)=>a+wlUnits(r),0),desigUnits,desigName,specialUnits,specialName)+
     block('Overload',overload,overload.reduce((a,r)=>a+wlUnits(r),0))+
     block('Emergency',emergency,emergency.reduce((a,r)=>a+wlUnits(r),0))+
-    block('Praise',praise,praise.reduce((a,r)=>a+wlUnits(r),0));
+    block('Praise',praise,praise.reduce((a,r)=>a+wlUnits(r),0),desig2Units,desig2Name)+
+    block('Service Credit',[],0,desig3Units,desig3Name);
 }
 
 // ============================================================
@@ -1109,6 +1118,8 @@ function renderManageData(){
               <div class="lsub">${escHtml(i.qualification||'')}${i.years_service?' | '+i.years_service+' yrs':''}${i.salary_grade?' | SG '+i.salary_grade:''}</div>
               ${i.designation?`<div class="lsub"><b>Designation:</b> ${escHtml(i.designation)} (${i.designation_units||0} units)</div>`:''}
               ${i.special_assignment?`<div class="lsub"><b>Special Assignment:</b> ${escHtml(i.special_assignment)} (${i.special_assignment_units||0} units)</div>`:''}
+              ${i.designation2?`<div class="lsub"><b>2nd Designation (PRAISE):</b> ${escHtml(i.designation2)} (${i.designation2_units||0} units)</div>`:''}
+              ${i.designation3?`<div class="lsub"><b>3rd Designation (Service Credit):</b> ${escHtml(i.designation3)} (${i.designation3_units||0} units)</div>`:''}
               <div class="major-tags">${i.majors.map(m=>`<span class="major-tag">${escHtml(m.name)}</span>`).join('')}</div>
               ${(i.can_handle&&i.can_handle.length)?`<div style="font-size:10px;color:#555;margin-top:3px;"><b>Can handle:</b> ${[...new Set(i.can_handle.map(m=>m.name))].map(n=>escHtml(n)).join(', ')}</div>`:''}
             </div>
@@ -1158,6 +1169,14 @@ function renderManageData(){
             <div style="display:flex;gap:6px;margin-bottom:6px;">
               <input type="text" id="inst-special-${i.id}" value="${escAttr(i.special_assignment||'')}" placeholder="Special Assignment (e.g. Research Project)" style="flex:1;">
               <input type="number" id="inst-specialunits-${i.id}" value="${i.special_assignment_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input type="text" id="inst-desig2-${i.id}" value="${escAttr(i.designation2||'')}" placeholder="2nd Designation — goes to PRAISE Load" style="flex:1;">
+              <input type="number" id="inst-desig2units-${i.id}" value="${i.designation2_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input type="text" id="inst-desig3-${i.id}" value="${escAttr(i.designation3||'')}" placeholder="3rd Designation — goes to Service Credit Load" style="flex:1;">
+              <input type="number" id="inst-desig3units-${i.id}" value="${i.designation3_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
             <div style="font-size:11px;font-weight:700;color:var(--gray3);margin-bottom:4px;">MAJORS</div>
             <div style="border:1.5px solid var(--gray2);border-radius:5px;padding:6px;background:#fff;max-height:100px;overflow-y:auto;margin-bottom:8px;">
@@ -1354,14 +1373,18 @@ async function addInstructor(){
   const designation_units=parseFloat(document.getElementById('ni-desig-units').value)||0;
   const special_assignment=document.getElementById('ni-special').value.trim();
   const special_assignment_units=parseFloat(document.getElementById('ni-special-units').value)||0;
+  const designation2=document.getElementById('ni-desig2').value.trim();
+  const designation2_units=parseFloat(document.getElementById('ni-desig2-units').value)||0;
+  const designation3=document.getElementById('ni-desig3').value.trim();
+  const designation3_units=parseFloat(document.getElementById('ni-desig3-units').value)||0;
   const major_ids=[...document.querySelectorAll('#ni-majors input:checked')].map(cb=>parseInt(cb.value));
   const can_handle_ids=[...document.querySelectorAll('.ni-subj-cb:checked')].map(cb=>parseInt(cb.value));
   const err=document.getElementById('ni-err');err.style.display='none';
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,major_ids,can_handle_ids});
-    ['ni-name','ni-qual','ni-rank','ni-service','ni-salary','ni-desig','ni-desig-units','ni-special','ni-special-units'].forEach(id=>document.getElementById(id).value='');
+    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,major_ids,can_handle_ids});
+    ['ni-name','ni-qual','ni-rank','ni-service','ni-salary','ni-desig','ni-desig-units','ni-special','ni-special-units','ni-desig2','ni-desig2-units','ni-desig3','ni-desig3-units'].forEach(id=>document.getElementById(id).value='');
     document.querySelectorAll('#ni-majors input').forEach(cb=>cb.checked=false);
     document.querySelectorAll('.ni-subj-cb').forEach(cb=>cb.checked=false);
     await loadState();renderAll();
@@ -1694,6 +1717,10 @@ async function saveEditInstructor(id){
   const designation_units=parseFloat(document.getElementById(`inst-desigunits-${id}`).value)||0;
   const special_assignment=document.getElementById(`inst-special-${id}`).value.trim();
   const special_assignment_units=parseFloat(document.getElementById(`inst-specialunits-${id}`).value)||0;
+  const designation2=document.getElementById(`inst-desig2-${id}`).value.trim();
+  const designation2_units=parseFloat(document.getElementById(`inst-desig2units-${id}`).value)||0;
+  const designation3=document.getElementById(`inst-desig3-${id}`).value.trim();
+  const designation3_units=parseFloat(document.getElementById(`inst-desig3units-${id}`).value)||0;
   const major_ids      =[...document.querySelectorAll(`#inst-edit-${id} input[type=checkbox]:not(.inst-ch-cb-${id}):checked`)].map(cb=>parseInt(cb.value));
   const can_handle_ids =[...document.querySelectorAll(`.inst-ch-cb-${id}:checked`)].map(cb=>parseInt(cb.value));
   const err         =document.getElementById(`inst-err-${id}`);
@@ -1701,7 +1728,7 @@ async function saveEditInstructor(id){
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,major_ids,can_handle_ids});
+    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,major_ids,can_handle_ids});
     await loadState();renderAll();
   }catch(e){err.textContent=e.message;err.style.display='block';}
 }

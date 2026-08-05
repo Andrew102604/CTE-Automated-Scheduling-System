@@ -68,7 +68,11 @@ async function init() {
       designation                 TEXT,
       designation_units           REAL DEFAULT 0,
       special_assignment          TEXT,
-      special_assignment_units    REAL DEFAULT 0
+      special_assignment_units    REAL DEFAULT 0,
+      designation2                TEXT,
+      designation2_units          REAL DEFAULT 0,
+      designation3                TEXT,
+      designation3_units          REAL DEFAULT 0
     )`,
     `CREATE TABLE IF NOT EXISTS instructor_majors (
       instructor_id  INTEGER NOT NULL REFERENCES instructors(id) ON DELETE CASCADE,
@@ -108,6 +112,12 @@ async function init() {
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN special_assignment TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN special_assignment_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
+  // 2nd designation reserves units on the PRAISE Load card; 3rd designation
+  // reserves units on the Service Credit Load card (see Manage Data > Add Instructor).
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation2 TEXT`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation2_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3 TEXT`); } catch (e) { /* already exists */ }
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try {
     await db.execute(`INSERT OR IGNORE INTO academic_settings (id, academic_year, semester) VALUES (1, '2025-2026', '1st Semester')`);
   } catch (e) { /* already exists */ }
