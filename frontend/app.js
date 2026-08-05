@@ -28,7 +28,13 @@ function autoSG(rankId, sgId){
 let STATE = {
   majors:[], rooms:[], dayClusters:[], timeslots:[],
   instructors:[], subjects:[], schedules:[],
-  settings:{academic_year:'2025-2026', semester:'1st Semester'}
+  settings:{academic_year:'2025-2026', semester:'1st Semester'},
+  // Archive: `terms` lists every academic_year/semester that has saved
+  // schedules (plus the current one). `currentTerm` mirrors Manage Data >
+  // Academic Year. `viewingTerm` is null while looking at the live/current
+  // term; set to {academic_year,semester} when browsing an archived one —
+  // schedules become read-only and Save/Reset are disabled in that mode.
+  terms:[], currentTerm:{academic_year:'2025-2026', semester:'1st Semester'}, viewingTerm:null
 };
 
 // ============================================================
@@ -334,21 +340,74 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
 // ============================================================
 // LOAD STATE
 // ============================================================
+// Fetches schedules for a specific term (used for archive viewing), or the
+// live/current term when `term` is null/undefined.
+function fetchSchedulesFor(term){
+  if(term) return apiGet(`/schedules?academic_year=${encodeURIComponent(term.academic_year)}&semester=${encodeURIComponent(term.semester)}`);
+  return apiGet('/schedules');
+}
+
 async function loadState(){instColorClear&&instColorClear();
   try{
-    const [majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings]=await Promise.all([
+    const [majors,rooms,dayClusters,timeslots,instructors,subjects,settings,termsResp]=await Promise.all([
       apiGet('/majors'),apiGet('/rooms'),apiGet('/day-clusters'),apiGet('/timeslots'),
-      apiGet('/instructors'),apiGet('/subjects'),apiGet('/schedules'),apiGet('/settings')
+      apiGet('/instructors'),apiGet('/subjects'),apiGet('/settings'),apiGet('/academic-terms')
     ]);
-    STATE={majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings};
+    const viewingTerm=STATE.viewingTerm; // preserve archive selection across incidental reloads
+    const schedules=await fetchSchedulesFor(viewingTerm);
+    STATE={majors,rooms,dayClusters,timeslots,instructors,subjects,schedules,settings,
+           terms:termsResp.terms,currentTerm:termsResp.current,viewingTerm};
     const acYearEl=document.getElementById('ac-year'), acSemEl=document.getElementById('ac-semester');
     if(acYearEl)acYearEl.value=settings.academic_year||'2025-2026';
     if(acSemEl)acSemEl.value=settings.semester||'1st Semester';
+    populateTermViewerSelector();
+    updateArchiveUI();
     setConn(true);
   }catch(e){
     setConn(false);
     if(!e.message.includes('Session'))showMsg(e.message,false);
   }
+}
+
+// ---- Archive: Viewing Term selector (Timetable / Class Program / Faculty Workload) ----
+function populateTermViewerSelector(){
+  const sel=document.getElementById('term-viewer-sel');
+  if(!sel)return;
+  sel.innerHTML=STATE.terms.map(t=>{
+    const isCurrent=t.academic_year===STATE.currentTerm.academic_year&&t.semester===STATE.currentTerm.semester;
+    const val=`${t.academic_year}||${t.semester}`;
+    return `<option value="${escAttr(val)}">${escHtml(t.semester)}, AY ${escHtml(t.academic_year)}${isCurrent?' (Current)':''}</option>`;
+  }).join('');
+  const active=STATE.viewingTerm||STATE.currentTerm;
+  sel.value=`${active.academic_year}||${active.semester}`;
+}
+
+async function onTermViewerChange(){
+  const sel=document.getElementById('term-viewer-sel');
+  const [academic_year,semester]=sel.value.split('||');
+  const isCurrent=academic_year===STATE.currentTerm.academic_year&&semester===STATE.currentTerm.semester;
+  STATE.viewingTerm=isCurrent?null:{academic_year,semester};
+  try{
+    STATE.schedules=await fetchSchedulesFor(STATE.viewingTerm);
+  }catch(e){showMsg(e.message,false);return;}
+  updateArchiveUI();
+  renderAll();
+}
+
+// Toggles the read-only banner and disables the write actions (Save & Plot,
+// Reset All Schedules, editing a Timetable cell) while an archived term is
+// being viewed. Printing stays enabled either way.
+function updateArchiveUI(){
+  const archived=!!STATE.viewingTerm;
+  const banner=document.getElementById('term-viewer-banner');
+  if(banner)banner.style.display=archived?'inline-block':'none';
+  const addBtn=document.getElementById('btn-add'), resetBtn=document.getElementById('btn-reset');
+  [addBtn,resetBtn].forEach(b=>{
+    if(!b)return;
+    b.disabled=archived;
+    b.style.opacity=archived?'0.5':'';
+    b.style.cursor=archived?'not-allowed':'';
+  });
 }
 
 // Saves the global Academic Year + Semester (Manage Data section) so it can
@@ -362,6 +421,8 @@ async function saveAcademicSettings(){
   try{
     const updated=await apiPut('/settings',{academic_year,semester});
     STATE.settings=updated;
+    STATE.viewingTerm=null; // follow the newly-current term
+    await loadState();renderAll();
     ok.style.display='block';
     setTimeout(()=>ok.style.display='none',2500);
   }catch(e){err.textContent=e.message;err.style.display='block';}
@@ -512,6 +573,7 @@ function filterSubjectsByInstructor(){ filterInstructorsBySubject(); }
 // ADD / RESET SCHEDULE
 // ============================================================
 async function addSchedule(){
+  if(STATE.viewingTerm){showMsg('You are viewing an archived term (read-only). Switch to Current to add schedules.',false);return;}
   const instructor_id =parseInt(document.getElementById('f-instructor').value);
   const subject_id    =parseInt(document.getElementById('f-subject').value);
   const section       =document.getElementById('f-section').value.trim();
@@ -539,6 +601,7 @@ function showMsg(txt,ok){
 }
 
 async function resetSchedules(){
+  if(STATE.viewingTerm){showMsg('You are viewing an archived term (read-only). Switch to Current to reset schedules.',false);return;}
   if(!confirm(`Reset ALL schedules for ${STATE.settings?.semester||'the current semester'}, AY ${STATE.settings?.academic_year||''}? Other semesters' saved schedules are not affected. This cannot be undone.`))return;
   try{await apiDelete('/schedules');await loadState();renderAll();}
   catch(e){showMsg(e.message,false);}
@@ -586,7 +649,8 @@ function renderTimetable(){
           const m=ds.find(s=>s.timeslot_label===slot.label&&s.room_id===rm.id&&s.section===sec);
           if(m){
             const inst=getInst(m.instructor_id);
-            html+=`<td class="cell-used" style="background:${instColor(m.instructor_id)};cursor:pointer;" onclick="openEditModal(${m.id})" title="Click to edit">
+            const archived=!!STATE.viewingTerm;
+            html+=`<td class="cell-used" style="background:${instColor(m.instructor_id)};${archived?'':'cursor:pointer;'}" ${archived?'':`onclick="openEditModal(${m.id})"`} title="${archived?'Archived term — read-only':'Click to edit'}">
               <strong style="font-size:10px;">${escHtml(m.code)}</strong><br>
               <span style="font-size:9px;color:#777;">${escHtml(m.section)}</span><br>
               <span style="font-size:9px;color:#555;">${escHtml(lastName(inst))}</span>

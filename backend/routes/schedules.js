@@ -78,7 +78,12 @@ async function currentTerm() {
 
 router.get('/schedules', async (req, res) => {
   try {
-    const term = await currentTerm();
+    // Optional ?academic_year=&semester= lets the Archive selector view a
+    // past term's data read-only; with no query params it defaults to
+    // whatever is CURRENTLY set in Manage Data > Academic Year.
+    const term = (req.query.academic_year && req.query.semester)
+      ? { academic_year: req.query.academic_year, semester: req.query.semester }
+      : await currentTerm();
     const r = await db.execute({
       sql: `SELECT * FROM schedules WHERE academic_year = ? AND semester = ?`,
       args: [term.academic_year, term.semester]
@@ -229,12 +234,36 @@ router.delete('/schedules', async (req, res) => {
 // ---------- Derived view: distinct sections (for Class Program selector) ----------
 router.get('/sections', async (req, res) => {
   try {
-    const term = await currentTerm();
+    const term = (req.query.academic_year && req.query.semester)
+      ? { academic_year: req.query.academic_year, semester: req.query.semester }
+      : await currentTerm();
     const r = await db.execute({
       sql: `SELECT DISTINCT section FROM schedules WHERE academic_year = ? AND semester = ? ORDER BY section`,
       args: [term.academic_year, term.semester]
     });
     res.json(r.rows.map(row => row.section));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ---------- Archive: every academic year/semester that has saved schedules ----------
+// Powers the "Viewing" dropdown on Timetable / Class Program / Faculty
+// Workload, so old terms can still be opened and printed without ever
+// touching what's currently in Manage Data > Academic Year.
+router.get('/academic-terms', async (req, res) => {
+  try {
+    const term = await currentTerm();
+    const r = await db.execute(`SELECT DISTINCT academic_year, semester FROM schedules`);
+    const semRank = { '1st Semester': 1, '2nd Semester': 2, 'Summer': 3 };
+    const terms = r.rows.map(row => ({ academic_year: row.academic_year, semester: row.semester }));
+    // Always include the current term, even if it has no schedules yet.
+    if (!terms.find(t => t.academic_year === term.academic_year && t.semester === term.semester)) {
+      terms.push({ academic_year: term.academic_year, semester: term.semester });
+    }
+    terms.sort((a, b) => {
+      if (a.academic_year !== b.academic_year) return b.academic_year.localeCompare(a.academic_year);
+      return (semRank[a.semester] || 9) - (semRank[b.semester] || 9);
+    });
+    res.json({ current: term, terms });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
