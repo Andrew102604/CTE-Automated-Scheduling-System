@@ -883,9 +883,13 @@ function renderWorkload(opts={}){
   const desig3Name=inst.designation3||'';
 
   // Total prep count is still shown on the Regular card (see block() below),
-  // but the Regular ceiling itself is back to a flat 18 units for everyone.
+  // but the Regular ceiling itself is a flat 18 units — except Part-time
+  // faculty, who have NO Regular tier at all: their whole load starts at
+  // Overload (9 units), then spills into Emergency (+3, so 12 total) same
+  // as everyone else's overflow.
   const totalPrepCount=new Set(rows.map(r=>r.code)).size;
-  const regularCeiling=LOAD_MAX.regular;
+  const isPartTime=(inst.status||'').trim().toLowerCase()==='part-time';
+  const regularCeiling=isPartTime?0:LOAD_MAX.regular;
 
   // 0/1 knapsack: given a list of {row,units} items, finds the subset whose
   // units sum is the maximum possible without exceeding `capacity`. Units
@@ -918,8 +922,11 @@ function renderWorkload(opts={}){
   // Pull out Field Study 1/2 and Educ 11 first — they're guaranteed a seat
   // in Regular and skip the subset-sum entirely, so they never get bumped
   // to Overload just because some other combination fits the cap better.
-  const forcedRegular=pool.filter(x=>isAlwaysRegular(x.row));
-  pool=pool.filter(x=>!isAlwaysRegular(x.row));
+  // (Part-time faculty have no Regular tier at all, so this guarantee
+  // doesn't apply to them — their Field Study/Educ 11 subjects flow through
+  // the normal Overload-first cascade like everything else.)
+  const forcedRegular=isPartTime?[]:pool.filter(x=>isAlwaysRegular(x.row));
+  pool=isPartTime?pool:pool.filter(x=>!isAlwaysRegular(x.row));
   const forcedRegularUnits=forcedRegular.reduce((a,x)=>a+x.units,0);
 
   const take=(capacity)=>{
