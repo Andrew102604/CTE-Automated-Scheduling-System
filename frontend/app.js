@@ -1052,12 +1052,14 @@ function renderWorkload(opts={}){
 
       </div>`;
 
-    // Service Credit card gets its own signature block: Department Dean as
+    // Emergency Load card gets its own signature block: Department Dean as
     // preparer, a 3-way Recommending Approval (Campus Director, VP for
     // Academic Affairs, Dean), and the President as final approver — using
-    // the separate Service Credit Signatories set from Manage Data, not the
-    // regular ones above.
-    const sigsServiceCredit=`
+    // the separate Emergency Load Signatories set from Manage Data, not the
+    // regular ones above. (Service Credit uses the regular sigsNormal block
+    // — its Approved is the Vice President for Academic Affairs, same as
+    // Regular/Overload/Praise.)
+    const sigsEmergency=`
       <div style="font-family:Arial,sans-serif;font-size:12px;margin-top:28px;">
 
         <!-- Row 1: Prepared by | Conforme | Verified by -->
@@ -1212,7 +1214,7 @@ function renderWorkload(opts={}){
 
       <div class="sig-footer-group">
       <div class="wl-sigs wl-sigs-2col" id="${cardId}-sigs">
-        ${label==='Service Credit'?sigsServiceCredit:sigsNormal}
+        ${label==='Emergency'?sigsEmergency:sigsNormal}
       </div>
 
       <!-- FOOTER -->

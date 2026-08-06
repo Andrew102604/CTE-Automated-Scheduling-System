@@ -532,7 +532,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
 
   <div id="main">
     <div id="tabs">
-      <button class="tab-btn active" onclick="switchTab(0)">Timetable</button>
+      <button class="tab-btn active" onclick="switchTab(0)">Room Utilization Tracker</button>
       <button class="tab-btn" onclick="switchTab(1)">Class Program</button>
       <button class="tab-btn" onclick="switchTab(2)">Faculty Workload</button>
       <button class="tab-btn" onclick="switchTab(3)">Manage Data</button>
@@ -542,7 +542,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <!-- PANEL 0: TIMETABLE -->
       <div class="panel active" id="panel-0">
         <div class="section-selector no-print">
-          <button class="btn-print" onclick="printTimetableOnly()">🖨️ Print Timetable</button>
+          <button class="btn-print" onclick="printTimetableOnly()">🖨️ Print Room Utilization Tracker</button>
         </div>
         <div id="timetable-grid"></div>
       </div>
@@ -853,8 +853,8 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
               </div>
 
               <div class="mgr-add-box">
-                <div class="mgr-add-title">Service Credit Signatories <span style="font-weight:400;color:var(--gray3);">(optional)</span></div>
-                <div class="mgr-section-sub" style="margin-bottom:10px;">Only used on the Faculty Workload's Service Credit page — separate from the regular signatories above, since Service Credit has its own set of signers (Department Dean, 3-way Recommending Approval, President).</div>
+                <div class="mgr-add-title">Emergency Load Signatories <span style="font-weight:400;color:var(--gray3);">(optional)</span></div>
+                <div class="mgr-section-sub" style="margin-bottom:10px;">Only used on the Faculty Workload's Emergency Load card — separate from the regular signatories above, since Emergency Load has its own set of signers (Department Dean, 3-way Recommending Approval, President). Service Credit uses the regular signatories, with the Vice President for Academic Affairs as Approved.</div>
                 <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
                   <div>
                     <label style="font-size:11px;color:var(--gray3);">Prepared by (Department Dean)</label>
@@ -921,9 +921,9 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
           <h3 id="archive-viewer-title" class="no-print" style="margin:0 0 14px;color:var(--navy);"></h3>
 
           <div id="archive-tt-section">
-            <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Timetable</div>
+            <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Room Utilization Tracker</div>
             <div class="section-selector no-print">
-              <button class="btn-print" onclick="printArchiveTimetableOnly()">🖨️ Print Timetable</button>
+              <button class="btn-print" onclick="printArchiveTimetableOnly()">🖨️ Print Room Utilization Tracker</button>
             </div>
             <div id="archive-timetable-grid"></div>
           </div>
