@@ -56,6 +56,22 @@ async function init() {
       sc_dean               TEXT NOT NULL DEFAULT '',
       sc_approved_by        TEXT NOT NULL DEFAULT ''
     )`,
+    // Editable letterhead (header) and contact-info strip (footer) that
+    // auto-fills onto every printed Class Program / Faculty Workload / Room
+    // Utilization Tracker document — so it can be updated centrally in
+    // Manage Data if the university's details ever change in future years,
+    // instead of needing code changes.
+    `CREATE TABLE IF NOT EXISTS doc_settings (
+      id             INTEGER PRIMARY KEY CHECK (id = 1),
+      header_line1   TEXT NOT NULL DEFAULT 'Republic of the Philippines',
+      header_line2   TEXT NOT NULL DEFAULT 'North Eastern Mindanao State University',
+      header_line3   TEXT NOT NULL DEFAULT 'Tagbina Campus, Surigao del Sur',
+      footer_address TEXT NOT NULL DEFAULT 'Tagbina, Surigao del Sur 8308',
+      footer_phone   TEXT NOT NULL DEFAULT '',
+      footer_website TEXT NOT NULL DEFAULT 'www.nemsu.edu.ph',
+      footer_doccode TEXT NOT NULL DEFAULT '',
+      footer_doccode_wl TEXT NOT NULL DEFAULT ''
+    )`,
     `CREATE TABLE IF NOT EXISTS majors (
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       name  TEXT NOT NULL,
@@ -207,6 +223,10 @@ async function init() {
   try {
     await db.execute(`INSERT OR IGNORE INTO academic_settings (id, academic_year, semester) VALUES (1, '2025-2026', '1st Semester')`);
   await db.execute(`INSERT OR IGNORE INTO signatory_settings (id) VALUES (1)`);
+  await db.execute(`INSERT OR IGNORE INTO doc_settings (id) VALUES (1)`);
+  // Class Program and Faculty Workload use different document control
+  // codes, so each gets its own field instead of sharing one.
+  try { await db.execute(`ALTER TABLE doc_settings ADD COLUMN footer_doccode_wl TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }
   } catch (e) { /* already exists */ }
   try {
     await db.execute(`CREATE TABLE IF NOT EXISTS instructor_can_handle (

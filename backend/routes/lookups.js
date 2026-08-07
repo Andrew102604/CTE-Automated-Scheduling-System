@@ -44,6 +44,29 @@ router.put('/signatories', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ---------- DOCUMENT HEADER & FOOTER (auto-fills every printed document) ----------
+router.get('/doc-settings', async (req, res) => {
+  try {
+    const r = await db.execute(`SELECT header_line1, header_line2, header_line3, footer_address, footer_phone, footer_website, footer_doccode, footer_doccode_wl FROM doc_settings WHERE id = 1`);
+    res.json(r.rows[0] || {
+      header_line1:'Republic of the Philippines', header_line2:'North Eastern Mindanao State University', header_line3:'Tagbina Campus, Surigao del Sur',
+      footer_address:'Tagbina, Surigao del Sur 8308', footer_phone:'', footer_website:'www.nemsu.edu.ph', footer_doccode:'', footer_doccode_wl:''
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/doc-settings', async (req, res) => {
+  const f = ['header_line1','header_line2','header_line3','footer_address','footer_phone','footer_website','footer_doccode','footer_doccode_wl'];
+  const vals = f.map(k => (req.body[k] || '').toString().trim());
+  try {
+    await db.execute({
+      sql: `UPDATE doc_settings SET header_line1=?, header_line2=?, header_line3=?, footer_address=?, footer_phone=?, footer_website=?, footer_doccode=?, footer_doccode_wl=? WHERE id = 1`,
+      args: vals
+    });
+    const out = {}; f.forEach((k,i)=>out[k]=vals[i]);
+    res.json(out);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ---------- MAJORS ----------
 router.get('/majors', async (req, res) => {
   try {

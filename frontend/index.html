@@ -581,6 +581,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <div class="mgr-nav-item" onclick="mgSwitch('instructors',this)"><span class="mgr-nav-num">⑥</span> Instructors</div>
             <div class="mgr-nav-item" onclick="mgSwitch('academic',this)"><span class="mgr-nav-num">⑦</span> Academic Year</div>
             <div class="mgr-nav-item" onclick="mgSwitch('signatories',this)"><span class="mgr-nav-num">⑧</span> Signatories</div>
+            <div class="mgr-nav-item" onclick="mgSwitch('docsettings',this)"><span class="mgr-nav-num">⑨</span> Header &amp; Footer</div>
             <div class="mgr-nav-item" onclick="mgSwitch('credentials',this)"><span class="mgr-nav-num" style="color:var(--red);">🔐</span> Credentials</div>
           </nav>
 
@@ -884,6 +885,60 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                 </div>
                 <div class="inline-err" id="sig-err"></div>
                 <div class="auth-success" id="sig-ok" style="text-align:left;margin-top:8px;">Signatories updated.</div>
+              </div>
+            </div>
+
+            <!-- DOCUMENT HEADER & FOOTER -->
+            <div class="mgr-section" id="mgs-docsettings">
+              <div class="mgr-section-title">Document Header &amp; Footer</div>
+              <div class="mgr-section-sub">Set once here — it automatically fills the letterhead (top) and contact-info strip (bottom) on every printed Class Program, Faculty Workload, and Room Utilization Tracker document. Update it here if the university's details ever change in future years, instead of needing this rebuilt.</div>
+
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Header (letterhead, below the logo)</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Line 1</label>
+                    <input type="text" id="doc-h1" class="mgr-input" placeholder="Republic of the Philippines" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Line 2 (university name)</label>
+                    <input type="text" id="doc-h2" class="mgr-input" placeholder="North Eastern Mindanao State University" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Line 3 (campus)</label>
+                    <input type="text" id="doc-h3" class="mgr-input" placeholder="Tagbina Campus, Surigao del Sur" style="width:100%;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mgr-add-box">
+                <div class="mgr-add-title">Footer (contact-info strip at the bottom)</div>
+                <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">📍 Address</label>
+                    <input type="text" id="doc-f-address" class="mgr-input" placeholder="Tagbina, Surigao del Sur 8308" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">☎️ Phone</label>
+                    <input type="text" id="doc-f-phone" class="mgr-input" placeholder="086-628-0714" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">🌐 Website</label>
+                    <input type="text" id="doc-f-website" class="mgr-input" placeholder="www.nemsu.edu.ph" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Document control code — Class Program (bottom-right, optional)</label>
+                    <input type="text" id="doc-f-doccode" class="mgr-input" placeholder="FM-TA6-ACAD-004/Rev002/01.26.2024" style="width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:var(--gray3);">Document control code — Faculty Workload (bottom-right, optional)</label>
+                    <input type="text" id="doc-f-doccode-wl" class="mgr-input" placeholder="FM-ACAD-014/Rev002/01.26.2024" style="width:100%;">
+                  </div>
+                  <button class="mgr-btn" onclick="saveDocSettings()" style="align-self:flex-start;">Save</button>
+                </div>
+                <div class="inline-err" id="doc-err"></div>
+                <div class="auth-success" id="doc-ok" style="text-align:left;margin-top:8px;">Header &amp; Footer updated.</div>
+                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 The accreditation badges (ISO, UKAS, etc.) aren't included yet — send the actual logo image files and they can be added to the footer too.</div>
               </div>
             </div>
 
