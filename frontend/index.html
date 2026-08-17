@@ -418,7 +418,6 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="as">Automated Scheduling System</div>
     </div>
     <div class="auth-title">Admin Login</div>
-    <div class="auth-sub">Enter your admin credentials to access the scheduling system.</div>
     <div class="auth-field">
       <label>Username</label>
       <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
@@ -441,7 +440,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="as">Automated Scheduling System</div>
     </div>
     <div class="auth-title">First-Time Setup</div>
-    <div class="auth-sub">Welcome! Create an admin account to get started. This only happens once.</div>
+    <div class="auth-sub">Welcome! Create an admin account to get started.</div>
     <div class="auth-field">
       <label>Username</label>
       <input type="text" id="setup-username" placeholder="e.g. admin" autocomplete="username" onkeydown="if(event.key==='Enter')doSetup()">
@@ -494,7 +493,6 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="form-section">
         <label>Program / Year &amp; Section</label>
         <input type="text" id="f-section" placeholder="e.g. BEED 1A" onkeydown="if(event.key==='Enter')addSchedule()" oninput="filterSubjectsBySection()">
-        <div class="hint" style="color:var(--navy2);">Section is kept after saving — change only for a new section.</div>
         <div id="yr-hint" class="hint" style="color:var(--navy2);font-weight:600;display:none;"></div>
       </div>
       <div class="form-section">
@@ -505,7 +503,6 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="form-section">
         <label>Course</label>
         <select id="f-subject" onchange="filterInstructorsBySubject()"></select>
-        <div class="hint" id="subj-hint">Filtered by section program &amp; year level</div>
       </div>
       <div class="form-section">
         <label>Faculty</label>
