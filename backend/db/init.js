@@ -208,6 +208,16 @@ async function init() {
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation2_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3 TEXT`); } catch (e) { /* already exists */ }
   try { await db.execute(`ALTER TABLE instructors ADD COLUMN designation3_units REAL DEFAULT 0`); } catch (e) { /* already exists */ }
+  // Licensed Professional Teacher (LPT) status — CHED/RA 7836 requires that
+  // only LPT-licensed faculty handle Professional Education (Prof Ed)
+  // subjects. Defaults to 0 (not tagged) so no existing instructor record
+  // is affected until an admin explicitly checks this in Manage Data.
+  try { await db.execute(`ALTER TABLE instructors ADD COLUMN is_lpt INTEGER NOT NULL DEFAULT 0`); } catch (e) { /* already exists */ }
+  // Per-subject flag: does this course require an LPT-licensed instructor
+  // (i.e. it's a Professional Education subject)? Defaults to 0 so every
+  // existing subject keeps behaving exactly as before until an admin
+  // explicitly flags it in Manage Data > Courses.
+  try { await db.execute(`ALTER TABLE subjects ADD COLUMN requires_lpt INTEGER NOT NULL DEFAULT 0`); } catch (e) { /* already exists */ }
   // Recommending Approval on the Faculty Workload also needs the VP for
   // Academic Affairs alongside Campus Director and Dean.
   try { await db.execute(`ALTER TABLE signatory_settings ADD COLUMN wl_vp_academic TEXT NOT NULL DEFAULT ''`); } catch (e) { /* already exists */ }

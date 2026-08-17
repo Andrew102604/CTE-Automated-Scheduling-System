@@ -613,22 +613,30 @@ function filterInstructorsBySubject(){
 
   // Filter: instructor must have a major/minor matching subject's major_id,
   // OR the subject's major is listed in their allied "can handle" fields
-  const qualified = STATE.instructors.filter(i=>
+  let qualified = STATE.instructors.filter(i=>
     i.majors.some(m=>m.id===subj.major_id) ||
     (i.can_handle && i.can_handle.some(m=>m.id===subj.major_id))
   );
 
+  // CHED / RA 7836: Professional Education subjects (flagged "Requires LPT
+  // instructor" in Manage Data > Courses) may only be handled by
+  // LPT-licensed faculty, on top of the usual major match.
+  if (subj.requires_lpt) {
+    qualified = qualified.filter(i => i.is_lpt);
+  }
+
   if(hintEl){
     const subjMajor = STATE.majors.find(m=>m.id===subj.major_id);
+    const lptNote = subj.requires_lpt ? ' — LPT required' : '';
     hintEl.textContent = subjMajor
-      ? `Showing instructors with major: ${subjMajor.name}`
-      : 'Filtered by subject major';
+      ? `Showing instructors with major: ${subjMajor.name}${lptNote}`
+      : `Filtered by subject major${lptNote}`;
     hintEl.style.display = 'block';
   }
 
   instSel.innerHTML = qualified.length
-    ? qualified.map(i=>`<option value="${i.id}">${escHtml(i.name)}</option>`).join('')
-    : '<option value="">-- no instructor matches this subject --</option>';
+    ? qualified.map(i=>`<option value="${i.id}">${escHtml(i.name)}${i.is_lpt?' (LPT)':''}</option>`).join('')
+    : `<option value="">-- ${subj.requires_lpt?'no LPT-licensed instructor matches this subject':'no instructor matches this subject'} --</option>`;
 }
 
 // Keep old name as alias for backward compat (edit modal etc)
@@ -1366,7 +1374,7 @@ function renderManageData(){
         return `
           <div class="list-item">
             <div>
-              <div class="lname">${escHtml(i.name)}</div>
+              <div class="lname">${escHtml(i.name)}${i.is_lpt?' <span style="background:#2e7d32;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;">LPT</span>':''}</div>
               <div class="lsub">${escHtml(i.status)} | ${escHtml(i.rank||'—')}</div>
               <div class="lsub">${escHtml(i.qualification||'')}${i.years_service?' | '+i.years_service+' yrs':''}${i.salary_grade?' | SG '+i.salary_grade:''}</div>
               ${i.designation?`<div class="lsub"><b>Designation:</b> ${escHtml(i.designation)} (${i.designation_units||0} units)</div>`:''}
@@ -1431,6 +1439,10 @@ function renderManageData(){
               <input type="text" id="inst-desig3-${i.id}" value="${escAttr(i.designation3||'')}" placeholder="Service Credit Designation" style="flex:1;">
               <input type="number" id="inst-desig3units-${i.id}" value="${i.designation3_units||0}" placeholder="Units" min="0" step="0.5" style="width:65px;flex:none;">
             </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:8px;cursor:pointer;">
+              <input type="checkbox" id="inst-lpt-${i.id}" class="inst-lpt-cb-${i.id}" ${i.is_lpt?'checked':''} style="width:14px;height:14px;accent-color:var(--navy);">
+              <span>Licensed Professional Teacher (LPT)</span>
+            </label>
             <div style="font-size:11px;font-weight:700;color:var(--gray3);margin-bottom:4px;">MAJORS</div>
             <div style="border:1.5px solid var(--gray2);border-radius:5px;padding:6px;background:#fff;max-height:100px;overflow-y:auto;margin-bottom:8px;">
               ${majorCheckboxes}
@@ -1467,7 +1479,7 @@ function renderManageData(){
         const majorOpts=STATE.majors.filter(m=>(m.type||'Major')==='Major').map(m=>`<option value="${m.id}"${m.id===s.major_id?' selected':''}>${escHtml(m.name)}</option>`).join('');
         return `
           <div class="list-item">
-            <div><div class="lname">${escHtml(s.code)} – ${escHtml(s.descr)} ${s.is_lab?'<span style=\"background:#e53935;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LAB</span>':'<span style=\"background:#1565c0;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;\">LEC</span>'}${prog}${yr}${sem}</div><div class="lsub">${escHtml(s.major_name||'—')} | ${s.units} units${s.is_lab?' — WL: '+(s.units*2.25).toFixed(2)+' units':''}</div></div>
+            <div><div class="lname">${escHtml(s.code)} – ${escHtml(s.descr)} ${s.is_lab?'<span style=\"background:#e53935;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LAB</span>':'<span style=\"background:#1565c0;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;\">LEC</span>'}${s.requires_lpt?' <span style=\"background:#2e7d32;color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-weight:700;\">LPT REQUIRED</span>':''}${prog}${yr}${sem}</div><div class="lsub">${escHtml(s.major_name||'—')} | ${s.units} units${s.is_lab?' — WL: '+(s.units*2.25).toFixed(2)+' units':''}</div></div>
             <div style="display:flex;gap:3px;">
               <button class="list-edit-btn" onclick="toggleEdit('subj',${s.id})">✏</button>
               <button onclick="deleteSubject(${s.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;">🗑</button>
@@ -1502,6 +1514,7 @@ function renderManageData(){
               </select>
             </div>
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" id="subj-islab-${s.id}" ${s.is_lab?'checked':''} style="width:14px;height:14px;accent-color:var(--navy);"> Laboratory subject</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" id="subj-reqlpt-${s.id}" ${s.requires_lpt?'checked':''} style="width:14px;height:14px;accent-color:var(--navy);"> Requires LPT instructor</label>
             <div class="inline-err" id="subj-err-${s.id}"></div>
             <div class="edit-row">
               <button class="edit-save-btn" onclick="saveEditSubject(${s.id})">Save</button>
@@ -1638,14 +1651,16 @@ async function addInstructor(){
   const designation2_units=parseFloat(document.getElementById('ni-desig2-units').value)||0;
   const designation3=document.getElementById('ni-desig3').value.trim();
   const designation3_units=parseFloat(document.getElementById('ni-desig3-units').value)||0;
+  const is_lpt=document.getElementById('ni-lpt').checked?1:0;
   const major_ids=[...document.querySelectorAll('#ni-majors input:checked')].map(cb=>parseInt(cb.value));
   const can_handle_ids=[...document.querySelectorAll('.ni-subj-cb:checked')].map(cb=>parseInt(cb.value));
   const err=document.getElementById('ni-err');err.style.display='none';
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,major_ids,can_handle_ids});
+    await apiPost('/instructors',{name,qualification:qual,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,is_lpt,major_ids,can_handle_ids});
     ['ni-name','ni-qual','ni-rank','ni-service','ni-salary','ni-desig','ni-desig-units','ni-special','ni-special-units','ni-desig2','ni-desig2-units','ni-desig3','ni-desig3-units'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ni-lpt').checked=false;
     document.querySelectorAll('#ni-majors input').forEach(cb=>cb.checked=false);
     document.querySelectorAll('.ni-subj-cb').forEach(cb=>cb.checked=false);
     await loadState();renderAll();
@@ -1667,15 +1682,17 @@ async function addSubject(){
   const program=document.getElementById('ns-program').value||'Both';
   const semester=document.getElementById('ns-semester').value||'';
   const is_lab=document.getElementById('ns-islab').checked?1:0;
+  const requires_lpt=document.getElementById('ns-reqlpt').checked?1:0;
   const err=document.getElementById('ns-err');err.style.display='none';
   if(!code||!descr||!units||!major_id){err.textContent='Fill all subject fields.';err.style.display='block';return;}
   try{
-    await apiPost('/subjects',{code,descr,units,major_id,year_level,program,semester,is_lab});
+    await apiPost('/subjects',{code,descr,units,major_id,year_level,program,semester,is_lab,requires_lpt});
     ['ns-code','ns-desc','ns-units'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ns-year').value='0';
     document.getElementById('ns-program').value='Both';
     document.getElementById('ns-semester').value='';
     document.getElementById('ns-islab').checked=false;
+    document.getElementById('ns-reqlpt').checked=false;
     await loadState();renderAll();
   }catch(e){err.textContent=e.message;err.style.display='block';}
 }
@@ -1957,10 +1974,11 @@ async function saveEditSubject(id){
   const prog    =document.getElementById(`subj-prog-${id}`).value;
   const sem     =document.getElementById(`subj-sem-${id}`).value||'';
   const is_lab  =document.getElementById(`subj-islab-${id}`)?.checked?1:0;
+  const requires_lpt=document.getElementById(`subj-reqlpt-${id}`)?.checked?1:0;
   const err     =document.getElementById(`subj-err-${id}`);
   err.style.display='none';
   if(!code||!descr||!units||!major_id){err.textContent='Fill all fields.';err.style.display='block';return;}
-  try{await apiPut(`/subjects/${id}`,{code,descr,units,major_id,year_level:yr,program:prog,semester:sem,is_lab});await loadState();renderAll();}
+  try{await apiPut(`/subjects/${id}`,{code,descr,units,major_id,year_level:yr,program:prog,semester:sem,is_lab,requires_lpt});await loadState();renderAll();}
   catch(e){err.textContent=e.message;err.style.display='block';}
 }
 
@@ -1986,14 +2004,15 @@ async function saveEditInstructor(id){
   const designation2_units=parseFloat(document.getElementById(`inst-desig2units-${id}`).value)||0;
   const designation3=document.getElementById(`inst-desig3-${id}`).value.trim();
   const designation3_units=parseFloat(document.getElementById(`inst-desig3units-${id}`).value)||0;
-  const major_ids      =[...document.querySelectorAll(`#inst-edit-${id} input[type=checkbox]:not(.inst-ch-cb-${id}):checked`)].map(cb=>parseInt(cb.value));
+  const is_lpt      =document.getElementById(`inst-lpt-${id}`)?.checked?1:0;
+  const major_ids      =[...document.querySelectorAll(`#inst-edit-${id} input[type=checkbox]:not(.inst-ch-cb-${id}):not(.inst-lpt-cb-${id})`+`:checked`)].map(cb=>parseInt(cb.value)).filter(v=>!isNaN(v));
   const can_handle_ids =[...document.querySelectorAll(`.inst-ch-cb-${id}:checked`)].map(cb=>parseInt(cb.value));
   const err         =document.getElementById(`inst-err-${id}`);
   err.style.display='none';
   if(!name){err.textContent='Name is required.';err.style.display='block';return;}
   if(!major_ids.length){err.textContent='Select at least one major.';err.style.display='block';return;}
   try{
-    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,major_ids,can_handle_ids});
+    await apiPut(`/instructors/${id}`,{name,qualification,rank,status,years_service,salary_grade,designation,designation_units,special_assignment,special_assignment_units,designation2,designation2_units,designation3,designation3_units,is_lpt,major_ids,can_handle_ids});
     await loadState();renderAll();
   }catch(e){err.textContent=e.message;err.style.display='block';}
 }

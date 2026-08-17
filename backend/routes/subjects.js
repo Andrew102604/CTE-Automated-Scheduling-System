@@ -6,7 +6,7 @@ async function withMeta(row) {
   if (!row) return row;
   const r = await db.execute({ sql: `SELECT id, name FROM majors WHERE id = ?`, args: [row.major_id] });
   const major = r.rows[0];
-  return { ...row, major_name: major ? major.name : null, year_level: row.year_level ?? 0, program: row.program || 'Both', is_lab: row.is_lab ?? 0, semester: row.semester || '' };
+  return { ...row, major_name: major ? major.name : null, year_level: row.year_level ?? 0, program: row.program || 'Both', is_lab: row.is_lab ?? 0, semester: row.semester || '', requires_lpt: row.requires_lpt ?? 0 };
 }
 
 router.get('/subjects', async (req, res) => {
@@ -17,13 +17,13 @@ router.get('/subjects', async (req, res) => {
 });
 
 router.post('/subjects', async (req, res) => {
-  const { code, descr, units, major_id, year_level, program, is_lab, semester } = req.body;
+  const { code, descr, units, major_id, year_level, program, is_lab, semester, requires_lpt } = req.body;
   if (!code || !descr || !units || !major_id)
     return res.status(400).json({ error: 'code, descr, units, and major_id are required.' });
   try {
     const info = await db.execute({
-      sql: `INSERT INTO subjects (code, descr, units, major_id, year_level, program, is_lab, semester) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [code.trim(), descr.trim(), units, major_id, year_level ?? 0, program || 'Both', is_lab ? 1 : 0, semester || '']
+      sql: `INSERT INTO subjects (code, descr, units, major_id, year_level, program, is_lab, semester, requires_lpt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [code.trim(), descr.trim(), units, major_id, year_level ?? 0, program || 'Both', is_lab ? 1 : 0, semester || '', requires_lpt ? 1 : 0]
     });
     const r = await db.execute({ sql: `SELECT * FROM subjects WHERE id = ?`, args: [Number(info.lastInsertRowid)] });
     res.status(201).json(await withMeta(r.rows[0]));
@@ -35,9 +35,9 @@ router.put('/subjects/:id', async (req, res) => {
     const existingR = await db.execute({ sql: `SELECT * FROM subjects WHERE id = ?`, args: [req.params.id] });
     const existing = existingR.rows[0];
     if (!existing) return res.status(404).json({ error: 'Subject not found.' });
-    const { code, descr, units, major_id, year_level, program, is_lab, semester } = req.body;
+    const { code, descr, units, major_id, year_level, program, is_lab, semester, requires_lpt } = req.body;
     await db.execute({
-      sql: `UPDATE subjects SET code=?, descr=?, units=?, major_id=?, year_level=?, program=?, is_lab=?, semester=? WHERE id=?`,
+      sql: `UPDATE subjects SET code=?, descr=?, units=?, major_id=?, year_level=?, program=?, is_lab=?, semester=?, requires_lpt=? WHERE id=?`,
       args: [
         (code || existing.code).trim(),
         (descr || existing.descr).trim(),
@@ -47,6 +47,7 @@ router.put('/subjects/:id', async (req, res) => {
         program || existing.program,
         is_lab !== undefined ? (is_lab ? 1 : 0) : (existing.is_lab ?? 0),
         semester !== undefined ? (semester || '') : (existing.semester ?? ''),
+        requires_lpt !== undefined ? (requires_lpt ? 1 : 0) : (existing.requires_lpt ?? 0),
         req.params.id
       ]
     });

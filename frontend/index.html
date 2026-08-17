@@ -726,6 +726,11 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                     <input type="text" id="ni-desig3" class="mgr-input" placeholder="Service Credit Designation" style="flex:1;">
                     <input type="number" id="ni-desig3-units" class="mgr-input" placeholder="Units" min="0" step="0.5" style="width:70px;flex:none;">
                   </div>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:8px;cursor:pointer;">
+                    <input type="checkbox" id="ni-lpt" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;">
+                    <span>Licensed Professional Teacher (LPT)</span>
+                  </label>
+                  <div style="font-size:11px;color:var(--gray3);margin-top:2px;">Required for assignment to courses flagged "Requires LPT instructor" (e.g. Professional Education subjects) under CHED / RA 7836.</div>
                 </div>
                 <div class="mgr-majors-section">
                   <div class="section-label">MAJOR SPECIALIZATION &amp; MINOR <span style="color:var(--red)">*</span></div>
@@ -781,6 +786,13 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                     <span>Laboratory subject</span>
                   </label>
                   <span style="font-size:11px;color:var(--gray3);">(Lab: 2 units = 4.5 WL units; 1 unit = 2.25 WL units)</span>
+                </div>
+                <div class="mgr-add-row" style="align-items:center;gap:10px;">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                    <input type="checkbox" id="ns-reqlpt" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;">
+                    <span>Requires LPT instructor</span>
+                  </label>
+                  <span style="font-size:11px;color:var(--gray3);">(e.g. Professional Education subjects — CHED / RA 7836)</span>
                   <button class="mgr-btn" onclick="addSubject()" style="margin-left:auto;">+ Add</button>
                 </div>
                 <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter. <b>Any Semester</b> = shows regardless of the current semester setting.</div>
