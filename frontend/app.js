@@ -683,8 +683,7 @@ async function resetSchedules(){
 // ============================================================
 function renderTimetable(opts={}){
   const schedules=opts.schedules||STATE.schedules;
-  const c=document.getElementById(opts.containerId||'timetable-grid');
-  if(!schedules.length){
+  const c=document.getElementById(opts.containerId||'timetable-grid');  if(!schedules.length){
     c.innerHTML=opts.readOnly
       ?'<div class="no-data">No schedules for this term.</div>'
       :`<div class="no-data">No schedules yet.<br>Use the sidebar to add one${STATE.instructors.length?'':' — add data in <a class="goto-manage" onclick="switchTab(3)">Manage Data</a> first'}.</div>`;
@@ -724,7 +723,8 @@ function renderTimetable(opts={}){
           if(m){
             const inst=getInst(m.instructor_id);
             const readOnly=!!opts.readOnly;
-            html+=`<td class="cell-used" style="background:${instColor(m.instructor_id)};${readOnly?'':'cursor:pointer;'}" ${readOnly?'':`onclick="openEditModal(${m.id})"`} title="${readOnly?'Archived term — read-only':'Click to edit'}">
+            const searchBlob=escAttr(`${m.code} ${m.desc||''} ${m.section} ${inst?inst.name:''}`.toLowerCase());
+            html+=`<td class="cell-used" data-search="${searchBlob}" style="background:${instColor(m.instructor_id)};${readOnly?'':'cursor:pointer;'}" ${readOnly?'':`onclick="openEditModal(${m.id})"`} title="${readOnly?'Archived term — read-only':'Click to edit'}">
               <strong style="font-size:10px;">${escHtml(m.code)}</strong><br>
               <span style="font-size:9px;color:#777;">${escHtml(m.section)}</span><br>
               <span style="font-size:9px;color:#555;">${escHtml(lastName(inst))}</span>
@@ -738,6 +738,44 @@ function renderTimetable(opts={}){
     html+=`</tbody></table></div>`;
   }
   c.innerHTML=html||'<div class="no-data">No schedules for any configured day cluster.</div>';
+  // Re-apply an active search (e.g. after adding/editing a schedule causes
+  // a re-render) so highlighted matches don't reset while typing.
+  const searchId=opts.containerId==='archive-timetable-grid'?'arc-tt-search':'tt-search';
+  const countId=opts.containerId==='archive-timetable-grid'?'arc-tt-search-count':'tt-search-count';
+  const searchEl=document.getElementById(searchId);
+  if(searchEl&&searchEl.value.trim())filterTimetableSearch(opts.containerId||'timetable-grid',searchId,countId);
+}
+
+// Highlights every Room Utilization Tracker cell whose subject code,
+// description, section, or faculty name matches the search text, dims the
+// rest, and shows a "N found" count — so the client can quickly find which
+// room/day/time a subject is in, instead of scanning the whole grid.
+function filterTimetableSearch(containerId,searchId,countId){
+  const container=document.getElementById(containerId);
+  const countEl=document.getElementById(countId);
+  if(!container)return;
+  const q=(document.getElementById(searchId)?.value||'').trim().toLowerCase();
+  const cells=container.querySelectorAll('td.cell-used');
+  if(!q){
+    cells.forEach(td=>{td.style.opacity='';td.style.outline='';td.style.boxShadow='';});
+    if(countEl)countEl.textContent='';
+    return;
+  }
+  let found=0;
+  cells.forEach(td=>{
+    const hit=(td.dataset.search||'').includes(q);
+    if(hit){
+      found++;
+      td.style.opacity='1';
+      td.style.outline='3px solid #ffd600';
+      td.style.boxShadow='0 0 0 2px #000 inset';
+    }else{
+      td.style.opacity='0.25';
+      td.style.outline='';
+      td.style.boxShadow='';
+    }
+  });
+  if(countEl)countEl.textContent=found?`${found} found`:'No matches';
 }
 
 // ============================================================

@@ -422,6 +422,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="as">Automated Scheduling System</div>
     </div>
     <div class="auth-title">Admin Login</div>
+    <div class="auth-sub">Enter your admin credentials to access the scheduling system.</div>
     <div class="auth-field">
       <label>Username</label>
       <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
@@ -444,7 +445,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="as">Automated Scheduling System</div>
     </div>
     <div class="auth-title">First-Time Setup</div>
-    <div class="auth-sub">Welcome! Create an admin account to get started.</div>
+    <div class="auth-sub">Welcome! Create an admin account to get started. This only happens once.</div>
     <div class="auth-field">
       <label>Username</label>
       <input type="text" id="setup-username" placeholder="e.g. admin" autocomplete="username" onkeydown="if(event.key==='Enter')doSetup()">
@@ -497,6 +498,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="form-section">
         <label>Program / Year &amp; Section</label>
         <input type="text" id="f-section" placeholder="e.g. BEED 1A" onkeydown="if(event.key==='Enter')addSchedule()" oninput="filterSubjectsBySection()">
+        <div class="hint" style="color:var(--navy2);">Section is kept after saving — change only for a new section.</div>
         <div id="yr-hint" class="hint" style="color:var(--navy2);font-weight:600;display:none;"></div>
       </div>
       <div class="form-section">
@@ -507,6 +509,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="form-section">
         <label>Course</label>
         <select id="f-subject" onchange="filterInstructorsBySubject()"></select>
+        <div class="hint" id="subj-hint">Filtered by section program &amp; year level</div>
       </div>
       <div class="form-section">
         <label>Faculty</label>
@@ -544,6 +547,8 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
       <div class="panel active" id="panel-0">
         <div class="section-selector no-print">
           <button class="btn-print" onclick="printTimetableOnly()">🖨️ Print Room Utilization Tracker</button>
+          <input type="text" id="tt-search" class="mgr-input" placeholder="🔍 Search a subject, section, or faculty to find its room..." style="flex:1;min-width:220px;max-width:420px;" oninput="filterTimetableSearch('timetable-grid','tt-search','tt-search-count')" onkeydown="event.stopPropagation()">
+          <span id="tt-search-count" style="font-size:12px;color:var(--gray3);font-weight:600;"></span>
         </div>
         <div id="timetable-grid"></div>
       </div>
@@ -592,6 +597,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- MAJORS -->
             <div class="mgr-section active" id="mgs-majors">
               <div class="mgr-section-title">Majors &amp; Minors</div>
+              <div class="mgr-section-sub">Add Major Specializations and Minor fields. These are used to assign instructor specializations and filter subjects.</div>
 
               <!-- MAJOR SPECIALIZATION -->
               <div style="margin-bottom:20px;">
@@ -609,6 +615,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
               <!-- MINOR -->
               <div style="margin-bottom:20px;">
                 <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--gold);">② Minor</div>
+                <div style="font-size:11px;color:var(--gray3);margin-bottom:6px;">Auto-synced from Major Specialization — no need to add separately.</div>
                 <div class="mgr-list-wrap" id="major-list-minor"></div>
               </div>
 
@@ -621,6 +628,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- ROOMS -->
             <div class="mgr-section" id="mgs-rooms">
               <div class="mgr-section-title">Rooms / Locations</div>
+              <div class="mgr-section-sub">Add all classrooms, laboratories, and other venues used for scheduling.</div>
               <div class="mgr-list-wrap" id="room-list"></div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Add Room</div>
@@ -635,6 +643,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- DAY CLUSTERS -->
             <div class="mgr-section" id="mgs-dayclusters">
               <div class="mgr-section-title">Day Clusters</div>
+              <div class="mgr-section-sub">Define which days are grouped together for scheduling (e.g. Monday &amp; Thursday share the same time slots).</div>
               <div class="mgr-hint">
                 <b>Example:</b> Key = <b>MTh</b> &nbsp;|&nbsp; Full label = <b>MTh — MONDAY &amp; THURSDAY</b>
               </div>
@@ -653,6 +662,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- TIME SLOTS -->
             <div class="mgr-section" id="mgs-timeslots">
               <div class="mgr-section-title">Time Slots</div>
+              <div class="mgr-section-sub">Add each class period in order from earliest to latest. Check "Lunch" on the first afternoon slot to insert a lunch break in the timetable.</div>
               <div class="mgr-list-wrap" id="ts-list"></div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Add Time Slot</div>
@@ -668,6 +678,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- INSTRUCTORS -->
             <div class="mgr-section" id="mgs-instructors">
               <div class="mgr-section-title">Instructors / Faculty</div>
+              <div class="mgr-section-sub">Add faculty members and assign their teaching majors. Majors must be added first.</div>
               <div class="mgr-list-wrap" id="inst-list"></div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Add Instructor</div>
@@ -732,6 +743,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                 </div>
                 <div class="mgr-majors-section" style="margin-top:10px;">
                   <div class="section-label"> ALLIED FIELDS</div>
+                  <div style="font-size:11px;color:var(--gray3);margin-bottom:5px;">Other majors/minors this instructor is qualified to teach.</div>
                   <div style="border:1.5px solid var(--gray2);border-radius:5px;padding:6px;background:#fff;max-height:130px;overflow-y:auto;">
                     <div id="ni-subjects"><div style="font-size:11px;color:#aaa;">Add majors first.</div></div>
                   </div>
@@ -744,6 +756,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- SUBJECTS -->
             <div class="mgr-section" id="mgs-subjects">
               <div class="mgr-section-title">Courses</div>
+              <div class="mgr-section-sub">Add all subjects/courses. Set <b>Program</b> to filter by BEED or BSED — when assigning schedules, the system auto-filters based on the section name (e.g. <b>BEED 1A</b> → BEED + 1st year subjects only, <b>BSED 2B</b> → BSED + 2nd year subjects only). Use <b>All Programs</b> for GE subjects shared by both. Set <b>Semester</b> so the course only shows up when that semester is the current one in Academic Year — leave it <b>Any Semester</b> if unsure.</div>
               <div class="mgr-list-wrap" id="subj-list"></div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Add Course</div>
@@ -777,14 +790,17 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                     <input type="checkbox" id="ns-islab" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;">
                     <span>Laboratory subject</span>
                   </label>
+                  <span style="font-size:11px;color:var(--gray3);">(Lab: 2 units = 4.5 WL units; 1 unit = 2.25 WL units)</span>
                 </div>
                 <div class="mgr-add-row" style="align-items:center;gap:10px;">
                   <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
                     <input type="checkbox" id="ns-reqlpt" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;">
                     <span>Requires LPT instructor</span>
                   </label>
+                  <span style="font-size:11px;color:var(--gray3);">(e.g. Professional Education subjects — CHED / RA 7836)</span>
                   <button class="mgr-btn" onclick="addSubject()" style="margin-left:auto;">+ Add</button>
                 </div>
+                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 <b>All Programs</b> = GE/shared subjects. <b>BEED/BSED</b> = program-specific. <b>All Year Levels</b> = no year filter. <b>Any Semester</b> = shows regardless of the current semester setting.</div>
                 <div class="inline-err" id="ns-err"></div>
               </div>
             </div>
@@ -792,6 +808,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- ACADEMIC YEAR / SEMESTER -->
             <div class="mgr-section" id="mgs-academic">
               <div class="mgr-section-title">Academic Year &amp; Semester</div>
+              <div class="mgr-section-sub">Set once here — it automatically fills the Academic Year and Semester on every Class Program and Faculty Workload document, so it no longer needs to be typed/edited on each one.</div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Current Setting</div>
                 <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
@@ -811,6 +828,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- SIGNATORIES -->
             <div class="mgr-section" id="mgs-signatories">
               <div class="mgr-section-title">Signatories</div>
+              <div class="mgr-section-sub">Enter the names once here — they automatically fill into every printed Faculty Workload and Class Program document, so no need to type each name per document anymore.</div>
 
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Faculty Workload Signatories</div>
@@ -853,7 +871,8 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
               </div>
 
               <div class="mgr-add-box">
-                <div class="mgr-add-title">Emergency Load Signatories <span style="font-weight:400;color:var(--gray3);"></span></div>
+                <div class="mgr-add-title">Emergency Load Signatories <span style="font-weight:400;color:var(--gray3);">(optional)</span></div>
+                <div class="mgr-section-sub" style="margin-bottom:10px;">Only used on the Faculty Workload's Emergency Load card — separate from the regular signatories above, since Emergency Load has its own set of signers (Department Dean, 3-way Recommending Approval, President). Service Credit uses the regular signatories, with the Vice President for Academic Affairs as Approved.</div>
                 <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
                   <div>
                     <label style="font-size:11px;color:var(--gray3);">Prepared by (Department Dean)</label>
@@ -889,6 +908,7 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <!-- DOCUMENT HEADER & FOOTER -->
             <div class="mgr-section" id="mgs-docsettings">
               <div class="mgr-section-title">Document Header &amp; Footer</div>
+              <div class="mgr-section-sub">Set once here — it automatically fills the letterhead (top) and contact-info strip (bottom) on every printed Class Program, Faculty Workload, and Room Utilization Tracker document. Update it here if the university's details ever change in future years, instead of needing this rebuilt.</div>
 
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Header (letterhead, below the logo)</div>
@@ -935,12 +955,14 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
                 </div>
                 <div class="inline-err" id="doc-err"></div>
                 <div class="auth-success" id="doc-ok" style="text-align:left;margin-top:8px;">Header &amp; Footer updated.</div>
+                <div style="font-size:11px;color:var(--gray3);margin-top:6px;">💡 The accreditation badges (ISO, UKAS, etc.) aren't included yet — send the actual logo image files and they can be added to the footer too.</div>
               </div>
             </div>
 
             <!-- CREDENTIALS -->
             <div class="mgr-section" id="mgs-credentials">
               <div class="mgr-section-title">Change Admin Credentials</div>
+              <div class="mgr-section-sub">Update the admin username and/or password. You must enter your current password to make changes.</div>
               <div class="mgr-add-box">
                 <div class="mgr-add-title">Update Credentials</div>
                 <div class="mgr-add-row" style="flex-direction:column;align-items:stretch;gap:10px;">
@@ -974,6 +996,8 @@ body.printing-archive-wl #archive-cp-section{display:none!important;}
             <div class="no-print" style="font-weight:700;font-size:13px;color:var(--navy2);margin-bottom:6px;">Room Utilization Tracker</div>
             <div class="section-selector no-print">
               <button class="btn-print" onclick="printArchiveTimetableOnly()">🖨️ Print Room Utilization Tracker</button>
+              <input type="text" id="arc-tt-search" class="mgr-input" placeholder="🔍 Search a subject, section, or faculty to find its room..." style="flex:1;min-width:220px;max-width:420px;" oninput="filterTimetableSearch('archive-timetable-grid','arc-tt-search','arc-tt-search-count')">
+              <span id="arc-tt-search-count" style="font-size:12px;color:var(--gray3);font-weight:600;"></span>
             </div>
             <div id="archive-timetable-grid"></div>
           </div>
